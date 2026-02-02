@@ -5,7 +5,6 @@ import { useState, FormEvent, ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import './styles.css';
 
-// Tipe untuk form data
 interface FormData {
   name: string;
   email: string;
@@ -18,10 +17,8 @@ interface LoginData {
   password: string;
 }
 
-console.log('NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
-
-// Ganti URL ini dengan alamat backend Anda (misalnya http://localhost:3001 atau URL production)
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+// URL backend dari environment variable
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function Home() {
   const [isSignUpActive, setIsSignUpActive] = useState<boolean>(false);
@@ -39,43 +36,6 @@ export default function Home() {
   const [error, setError] = useState<string>('');
   const router = useRouter();
 
-  const fetchWithErrorHandling = async (url: string, options: RequestInit) => {
-    try {
-      console.log('📤 Mengirim request ke:', url);
-      console.log('📝 Data:', JSON.parse(options.body as string));
-
-      const response = await fetch(url, {
-        ...options,
-        headers: {
-          ...options.headers,
-          'Accept': 'application/json',
-        },
-        mode: 'cors',
-        credentials: 'include'
-      });
-      
-      console.log('📥 Response status:', response.status);
-      console.log('📥 Response headers:', Object.fromEntries(response.headers.entries()));
-      
-      const responseText = await response.text();
-      console.log('📥 Response raw text:', responseText.substring(0, 500));
-      
-      let data;
-      try {
-        data = responseText ? JSON.parse(responseText) : {};
-      } catch (parseError) {
-        console.error('❌ Gagal parse JSON:', parseError);
-        console.error('❌ Response text:', responseText);
-        throw new Error(`Server mengembalikan response yang bukan JSON`);
-      }
-      
-      return { response, data };
-    } catch (error) {
-      console.error('❌ Fetch error:', error);
-      throw error;
-    }
-  };
-
   const handleSignUp = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
@@ -89,11 +49,8 @@ export default function Home() {
     }
 
     try {
-      // PERBAIKAN: Hapus console.log yang salah dan perbaiki sintaks
-      const url = `${API_URL}/api/auth/register`;
-      console.log('🔗 URL Signup:', url);
-      
-      const { response, data } = await fetchWithErrorHandling(url, {
+      // PANGGIL BACKEND, BUKAN NEXT.JS API
+      const response = await fetch(`${API_URL}/api/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -104,6 +61,8 @@ export default function Home() {
           password: formData.password
         }),
       });
+
+      const data = await response.json();
 
       if (!response.ok) {
         throw new Error(data.error || 'Pendaftaran gagal');
@@ -117,7 +76,7 @@ export default function Home() {
         confirmPassword: ''
       });
 
-      // Redirect ke login
+      // Tampilkan success message
       setIsSignUpActive(false);
       setError('');
       alert('Pendaftaran berhasil! Silakan login.');
@@ -135,11 +94,8 @@ export default function Home() {
     setLoading(true);
 
     try {
-      // PERBAIKAN: Perbaiki sintaks fetch yang rusak
-      const url = `${API_URL}/api/auth/login`;
-      console.log('🔗 URL Login:', url);
-      
-      const { response, data } = await fetchWithErrorHandling(url, {
+      // PANGGIL BACKEND, BUKAN NEXT.JS API
+      const response = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -150,19 +106,18 @@ export default function Home() {
         }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
         throw new Error(data.error || 'Login gagal');
       }
 
-      // Simpan token dan data user jika backend mengirimkannya
-      if (data.token) {
-        localStorage.setItem('token', data.token);
-        if (data.user) localStorage.setItem('user', JSON.stringify(data.user));
-      }
-
+      // Simpan token dan user data
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      
       // Login berhasil, redirect ke dashboard
       router.push('/dashboard');
-      router.refresh();
 
     } catch (err: any) {
       setError(err.message || 'Terjadi kesalahan');
@@ -187,6 +142,7 @@ export default function Home() {
     }));
   };
 
+  // ... (sisa kode UI tetap sama)
   return (
     <>
       <div className="container">
@@ -204,16 +160,14 @@ export default function Home() {
                 value={formData.name}
                 onChange={handleInputChange}
                 required
-                disabled={loading}
               />
               <input
                 type="email"
                 name="email"
-                placeholder="Email"
+                placeholder="Email or Username"
                 value={formData.email}
                 onChange={handleInputChange}
                 required
-                disabled={loading}
               />
               <input
                 type="password"
@@ -222,7 +176,6 @@ export default function Home() {
                 value={formData.password}
                 onChange={handleInputChange}
                 required
-                disabled={loading}
               />
               <input
                 type="password"
@@ -231,7 +184,6 @@ export default function Home() {
                 value={formData.confirmPassword}
                 onChange={handleInputChange}
                 required
-                disabled={loading}
               />
               {error && <div className="error-message">{error}</div>}
               <button type="submit" disabled={loading}>
@@ -252,7 +204,6 @@ export default function Home() {
                 value={loginData.email}
                 onChange={handleLoginInputChange}
                 required
-                disabled={loading}
               />
               <input
                 type="password"
@@ -261,7 +212,6 @@ export default function Home() {
                 value={loginData.password}
                 onChange={handleLoginInputChange}
                 required
-                disabled={loading}
               />
               <a href="/forgot-password">Lupa password?</a>
               {error && <div className="error-message">{error}</div>}
@@ -290,7 +240,6 @@ export default function Home() {
                   className="ghost"
                   id="signIn"
                   onClick={() => setIsSignUpActive(false)}
-                  disabled={loading}
                 >
                   Masuk
                 </button>
@@ -309,7 +258,6 @@ export default function Home() {
                   className="ghost"
                   id="signUp"
                   onClick={() => setIsSignUpActive(true)}
-                  disabled={loading}
                 >
                   Daftar
                 </button>
