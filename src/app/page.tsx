@@ -3,7 +3,7 @@
 
 import { useState, FormEvent, ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import './styles.css';
+import jwt from 'jsonwebtoken';
 
 // Tipe untuk form data
 interface FormData {
@@ -154,15 +154,34 @@ export default function Home() {
         throw new Error(data.error || 'Login gagal');
       }
 
-      // Simpan token dan data user jika backend mengirimkannya
-      if (data.token) {
-        localStorage.setItem('token', data.token);
-        if (data.user) localStorage.setItem('user', JSON.stringify(data.user));
+      // Simpan token
+      const accessToken = response.headers.get('X-Access-Token');
+      if (accessToken) {
+        localStorage.setItem('token', accessToken);
       }
 
-      // Login berhasil, redirect ke dashboard
-      router.push('/dashboard');
-      router.refresh();
+      // Ambil role dari response data
+      const role = data.data?.role;
+
+      // Simpan data user dengan role yang sesuai untuk auth guard
+      if (data.data) {
+        const userData = {
+          ...data.data,
+          role: role === 'teacher' ? 'guru' : role === 'student' ? 'siswa' : role
+        };
+        localStorage.setItem('user', JSON.stringify(userData));
+      }
+
+      // Redirect berdasarkan role
+      if (role === 'teacher') {
+        router.push('/teacher/dashboard');
+      } else if (role === 'student') {
+        router.push('/student/dashboard');
+      } else if (role === 'admin') {
+        router.push('/admin/dashboard');
+      } else {
+        router.push('/dashboard'); // Default untuk unregistered
+      }
 
     } catch (err: any) {
       setError(err.message || 'Terjadi kesalahan');
@@ -189,62 +208,14 @@ export default function Home() {
 
   return (
     <>
-      <div className="container">
-        <h2>FOURSENCE</h2>
-        <div className={`container-main ${isSignUpActive ? 'right-panel-active' : ''}`} id="container">
-          {/* Sign Up Form */}
-          <div className="form-container sign-up-container">
-            <form onSubmit={handleSignUp}>
-              <h1>Buat Akun</h1>
-              <span>Gunakan email untuk pendaftaran</span>
-              <input
-                type="text"
-                name="name"
-                placeholder="Nama Lengkap"
-                value={formData.name}
-                onChange={handleInputChange}
-                required
-                disabled={loading}
-              />
-              <input
-                type="email"
-                name="email"
-                placeholder="Email"
-                value={formData.email}
-                onChange={handleInputChange}
-                required
-                disabled={loading}
-              />
-              <input
-                type="password"
-                name="password"
-                placeholder="Password"
-                value={formData.password}
-                onChange={handleInputChange}
-                required
-                disabled={loading}
-              />
-              <input
-                type="password"
-                name="confirmPassword"
-                placeholder="Konfirmasi Password"
-                value={formData.confirmPassword}
-                onChange={handleInputChange}
-                required
-                disabled={loading}
-              />
-              {error && <div className="error-message">{error}</div>}
-              <button type="submit" disabled={loading}>
-                {loading ? 'Memproses...' : 'Daftar'}
-              </button>
-            </form>
-          </div>
-
+      <div className="w-full h-screen flex flex-col justify-center items-center p-5 bg-[url('/images/gedung-smkn4.jpg')] bg-no-repeat bg-center bg-fixed bg-cover">
+        <h2 className="text-4xl font-bold text-gray-800 mb-12">FOURSENCE</h2>
+        <div className={`w-full max-w-sm lg:max-w-md h-96 bg-white rounded-2xl shadow-2xl relative overflow-hidden transition-all duration-600 ease-in-out`} id="container">
           {/* Sign In Form */}
-          <div className="form-container sign-in-container">
-            <form onSubmit={handleLogin}>
-              <h1>Masuk</h1>
-              <span>Gunakan akun Anda</span>
+          <div className={`absolute top-0 left-0 w-full h-full transition-all duration-600 ease-in-out ${isSignUpActive ? 'opacity-0 -translate-x-full pointer-events-none' : 'opacity-100 translate-x-0'}`}>
+            <form onSubmit={handleLogin} className="w-full h-full bg-white flex flex-col items-center justify-center px-12 text-center">
+              <h1 className="font-bold m-0 text-2xl mb-4">Masuk</h1>
+              <span className="text-xs text-gray-600 mb-4 block">Gunakan akun Anda</span>
               <input
                 type="email"
                 name="email"
@@ -253,6 +224,7 @@ export default function Home() {
                 onChange={handleLoginInputChange}
                 required
                 disabled={loading}
+                className="bg-gray-100 border-0 px-4 py-3 my-2 w-10/12 rounded focus:outline-none focus:border-2 focus:border-red-500 disabled:opacity-70 text-sm"
               />
               <input
                 type="password"
@@ -262,68 +234,77 @@ export default function Home() {
                 onChange={handleLoginInputChange}
                 required
                 disabled={loading}
+                className="bg-gray-100 border-0 px-4 py-3 my-2 w-10/12 rounded focus:outline-none focus:border-2 focus:border-red-500 disabled:opacity-70 text-sm"
               />
-              <a href="/forgot-password">Lupa password?</a>
-              {error && <div className="error-message">{error}</div>}
-              <button type="submit" disabled={loading}>
+              <a href="/forgot-password" className="text-blue-500 text-xs my-3 hover:text-blue-700">Lupa password?</a>
+              {error && <div className="text-red-600 text-xs my-2 p-2 bg-red-100 rounded w-10/12">{error}</div>}
+              <button type="submit" disabled={loading} className="w-10/12 rounded-full bg-blue-500 text-white text-xs font-bold py-2 mt-4 hover:bg-blue-600 disabled:opacity-70 disabled:cursor-not-allowed transition">
                 {loading ? 'Memproses...' : 'Masuk'}
               </button>
+              <p className="text-xs text-gray-600 mt-4">Belum punya akun? <button type="button" onClick={() => setIsSignUpActive(true)} className="text-blue-500 font-semibold hover:underline">Daftar</button></p>
             </form>
           </div>
 
-          {/* Overlay */}
-          <div className="overlay-container">
-            <div className="overlay">
-              <div className="overlay-panel overlay-left">
-                <h1>Selamat Datang Kembali!</h1>
-                <div className="logo-container">
-                  <img
-                    src="/images/logo smk.png"
-                    alt="SMK Negeri 4 Bandung"
-                    className="school-logo"
-                  />
-                </div>
-
-                <p>Masuk dengan akun yang terdaftar pada sistem kami!
-                </p>
-                <button
-                  className="ghost"
-                  id="signIn"
-                  onClick={() => setIsSignUpActive(false)}
-                  disabled={loading}
-                >
-                  Masuk
-                </button>
-              </div>
-              <div className="overlay-panel overlay-right">
-                <h1>Belum Punya Akun?</h1>
-                <div className="logo-container">
-                  <img
-                    src="/images/logo smk.png"
-                    alt="SMK Negeri 4 Bandung"
-                    className="school-logo"
-                  />
-                </div>
-                <p>Masukkan detail pribadi anda, pastikan data benar!</p>
-                <button
-                  className="ghost"
-                  id="signUp"
-                  onClick={() => setIsSignUpActive(true)}
-                  disabled={loading}
-                >
-                  Daftar
-                </button>
-              </div>
-            </div>
+          {/* Sign Up Form */}
+          <div className={`absolute top-0 left-0 w-full h-full transition-all duration-600 ease-in-out ${isSignUpActive ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-full pointer-events-none'}`}>
+            <form onSubmit={handleSignUp} className="w-full h-full bg-white flex flex-col items-center justify-center px-12 text-center overflow-y-auto">
+              <h1 className="font-bold m-0 text-2xl mb-4">Buat Akun</h1>
+              <span className="text-xs text-gray-600 mb-4 block">Gunakan email untuk pendaftaran</span>
+              <input
+                type="text"
+                name="name"
+                placeholder="Nama Lengkap"
+                value={formData.name}
+                onChange={handleInputChange}
+                required
+                disabled={loading}
+                className="bg-gray-100 border-0 px-4 py-3 my-2 w-10/12 rounded focus:outline-none focus:border-2 focus:border-red-500 disabled:opacity-70 text-sm"
+              />
+              <input
+                type="email"
+                name="email"
+                placeholder="Email"
+                value={formData.email}
+                onChange={handleInputChange}
+                required
+                disabled={loading}
+                className="bg-gray-100 border-0 px-4 py-3 my-2 w-10/12 rounded focus:outline-none focus:border-2 focus:border-red-500 disabled:opacity-70 text-sm"
+              />
+              <input
+                type="password"
+                name="password"
+                placeholder="Password"
+                value={formData.password}
+                onChange={handleInputChange}
+                required
+                disabled={loading}
+                className="bg-gray-100 border-0 px-4 py-3 my-2 w-10/12 rounded focus:outline-none focus:border-2 focus:border-red-500 disabled:opacity-70 text-sm"
+              />
+              <input
+                type="password"
+                name="confirmPassword"
+                placeholder="Konfirmasi Password"
+                value={formData.confirmPassword}
+                onChange={handleInputChange}
+                required
+                disabled={loading}
+                className="bg-gray-100 border-0 px-4 py-3 my-2 w-10/12 rounded focus:outline-none focus:border-2 focus:border-red-500 disabled:opacity-70 text-sm"
+              />
+              {error && <div className="text-red-600 text-xs my-2 p-2 bg-red-100 rounded w-10/12">{error}</div>}
+              <button type="submit" disabled={loading} className="w-10/12 rounded-full bg-blue-500 text-white text-xs font-bold py-2 mt-4 hover:bg-blue-600 disabled:opacity-70 disabled:cursor-not-allowed transition">
+                {loading ? 'Memproses...' : 'Daftar'}
+              </button>
+              <p className="text-xs text-gray-600 mt-4">Sudah punya akun? <button type="button" onClick={() => setIsSignUpActive(false)} className="text-blue-500 font-semibold hover:underline">Masuk</button></p>
+            </form>
           </div>
         </div>
 
         {/* Footer */}
-        <footer className="mt-8 text-center text-grey-500 text-sm">
+        <footer className="mt-12 text-center text-white text-xs max-w-2xl">
           <p>© 2024 SMK Negeri 4 Bandung. All rights reserved.</p>
-          <p className="mt-1">
+          <p className="mt-2">
             Need help?{" "}
-            <a href="#" className="text-white-600 hover:text-blue-800">
+            <a href="#" className="text-blue-500 hover:text-blue-700">
               Contact support
             </a>
           </p>

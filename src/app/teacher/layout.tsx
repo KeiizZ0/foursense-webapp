@@ -12,9 +12,9 @@ export default function TeacherLayout({
 }) {
   return (
     <AuthGuard requiredRole="guru">
-      <div className="flex h-screen bg-slate-100">
+      <div className="flex w-screen h-screen bg-slate-50 overflow-hidden">
         <TeacherSidebar />
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-y-auto bg-white">
           {children}
         </main>
       </div>
