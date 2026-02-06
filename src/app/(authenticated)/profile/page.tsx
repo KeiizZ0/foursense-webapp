@@ -1,5 +1,5 @@
 "use client";
 
-export default function Absence() {
+export default function Profile() {
   return <div className="flex justify-center items-center"></div>;
 }
