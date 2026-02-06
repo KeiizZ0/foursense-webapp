@@ -4,6 +4,7 @@ import { useAuthStore } from "@/store/auth.store";
 import "../globals.css";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { Search } from "lucide-react";
 
 export default function RootLayout({
   children,
@@ -56,14 +57,40 @@ export default function RootLayout({
                 <path d="M14 10l2 2l-2 2"></path>
               </svg>
             </label>
-            <div className="px-4">Navbar Title</div>
+            <div className="px-4">SMKN 4 Bandung</div>
           </div>
-          <div className="flex justify-center items-center gap-2.5">
-            {myData?.name || "Unsigned"} | Login:{" "}
-            {accessToken ? "true" : "false"}
-            <button className="btn btn-warning w-fit" onClick={() => logout()}>
-              Logout
+          <div className="flex gap-2.5 items-center">
+            <button className="btn btn-circle border">
+              <Search />
             </button>
+            <div className="dropdown dropdown-bottom dropdown-end">
+              <div tabIndex={0} role="button" className="btn m-1 rounded-full">
+                {myData?.name.charAt(0)}
+              </div>
+              <ul
+                tabIndex={-1}
+                className="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm"
+              >
+                <div className="flex font-medium gap-2.5 mb-2.5">
+                  <div className="flex items-center justify-center bg-base-300 rounded-full w-10 h-10">
+                    {myData?.name.charAt(0)}
+                  </div>
+                  <div className="flex flex-col">
+                    <p>{myData?.name}</p>
+                    <p>{myData?.role}</p>
+                  </div>
+                </div>
+                <li>
+                  <a>Profile</a>
+                </li>
+                <li>
+                  <a>Settings</a>
+                </li>
+                <li>
+                  <a onClick={() => logout()}>Logout</a>
+                </li>
+              </ul>
+            </div>
           </div>
         </nav>
 
