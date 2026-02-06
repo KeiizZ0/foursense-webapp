@@ -13,7 +13,7 @@ import { create } from "zustand";
 interface AuthInterface {
   accessToken: string;
   myData: ShowMeData | null;
-  login: (data: LoginRequest) => Promise<null>;
+  login: (data: LoginRequest) => Promise<boolean>;
   refresh: () => Promise<boolean>;
   showMe: () => Promise<ShowMeData | null>;
   logout: () => Promise<boolean>;
@@ -28,9 +28,9 @@ export const useAuthStore = create<AuthInterface>((set) => ({
     try {
       const res = await login(data);
       set({ accessToken: res.data.token });
-      return null;
+      return true;
     } catch (error) {
-      return null;
+      return false;
     }
   },
 

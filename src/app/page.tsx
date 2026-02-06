@@ -23,8 +23,8 @@ export default function Home() {
   ) => {
     try {
       console.log("abc");
-      await login(formData);
-      router.push("/dashboard");
+      const res = await login(formData);
+      if (res) router.push("/dashboard");
     } catch (err) {
       console.error(err);
     }

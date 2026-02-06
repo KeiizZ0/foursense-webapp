@@ -1,9 +1,14 @@
 import { useAuthStore } from "@/store/auth.store";
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from "axios";
-import { useRouter } from "next/navigation";
+
+const baseURL = process.env.NEXT_PUBLIC_API_URL
+
+if (!baseURL) {
+  throw new Error("Invalid ENV")
+}
 
 export const ApiClient: AxiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  baseURL: baseURL,
   timeout: 10000,
 });
 
