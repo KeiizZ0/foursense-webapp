@@ -1,33 +1,20 @@
 "use client";
 
-import { useAuthStore } from "@/store/auth.store";
 import "../globals.css";
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
+import { logout, refresh } from "@/lib/helpers/auth";
+import { useAuthStore } from "@/store/user.store";
+import { showMe } from "@/restApi/user.api";
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const router = useRouter();
-  const { logout, refresh, showMe, myData, accessToken } = useAuthStore();
-  const isAuth = async () => {
-    if (accessToken) showMe();
-    else {
-      const ref = await refresh();
-      if (!ref) router.push("/");
-    }
-  };
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      isAuth();
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, [accessToken]);
+  const { myData } = useAuthStore();
+  async function doLogout() {
+    await logout();
+  }
 
   return (
     <div className="drawer lg:drawer-open" data-theme="light">
@@ -81,13 +68,13 @@ export default function RootLayout({
                   </div>
                 </div>
                 <li>
-                  <a>Profile</a>
+                  <a onClick={() => showMe()}>Profile</a>
                 </li>
                 <li>
                   <a>Settings</a>
                 </li>
                 <li>
-                  <a onClick={() => logout()}>Logout</a>
+                  <a onClick={doLogout}>Logout</a>
                 </li>
               </ul>
             </div>
