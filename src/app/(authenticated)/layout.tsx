@@ -56,7 +56,7 @@ export default function RootLayout({
                   </div>
                 </div>
                 <li>
-                  <a onClick={() => showMe()}>Profile</a>
+                  <a>Profile</a>
                 </li>
                 <li>
                   <a>Settings</a>

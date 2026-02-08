@@ -3,64 +3,72 @@ import { verifyToken } from "./lib/helpers/jose";
 import { refresh } from "./lib/helpers/auth";
 
 const publicRoute = ["/", "/forgot-password"];
+const roleAccess: Record<string, string> = {
+  admin: "/admin",
+  teacher: "/teacher",
+  student: "/student",
+};
+const allowedSubPaths = ["dashboard", "absence"];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const token = req.cookies.get("acctkn")?.value;
   const refresh_token = req.cookies.get("rftkn")?.value;
-  var payload = token ? await verifyToken(token) : null;
 
-  // 1. payload gagal tapi ada refresh token
+  let payload = token ? await verifyToken(token) : null;
+
+  // 1. Logic Refresh Token (Jika access token mati tapi refresh token ada)
   if (!payload && refresh_token) {
     const data = await refresh(refresh_token);
     if (data?.data?.accessToken) {
-      payload = token ? await verifyToken(data.data.accessToken) : null;
-    } else {
-      const loginUrl = new URL("/", req.url);
-      const response = NextResponse.redirect(loginUrl);
-
-      // Hapus access dan refresh kadaluarsa/rusak
-      response.cookies.delete("acctkn");
-      response.cookies.delete("rftkn");
-      return response;
+      payload = await verifyToken(data.data.accessToken);
     }
   }
 
-  // 2. ada token & akses halaman rahasia
-  if (!payload && !publicRoute.includes(pathname)) {
-    const loginUrl = new URL("/", req.url);
-    const response = NextResponse.redirect(loginUrl);
+  // 2. Jika TIDAK LOGIN
+  if (!payload) {
+    // Biarkan jika akses halaman publik
+    if (publicRoute.includes(pathname)) return NextResponse.next();
 
-    // Hapus access kadaluarsa/rusak
+    // Selain itu, tendang ke login dan bersihkan cookies
+    const response = NextResponse.redirect(new URL("/", req.url));
     response.cookies.delete("acctkn");
+    response.cookies.delete("rftkn");
     return response;
   }
 
-  // 3. Sudah login & akses halaman "/"
-  if (payload && pathname === "/") {
-    var target = "";
-    if (payload.role === "admin") target = "/admin/dashboard";
-    else if (payload.role === "teacher") target = "/teacher/dashboard";
-    else if (payload.role === "student") target = "/student/dashboard";
-    else target = "/unregister";
-    return NextResponse.redirect(new URL(target, req.url));
+  // 3. Jika SUDAH LOGIN & mencoba akses halaman login ("/")
+  if (publicRoute.includes(pathname)) {
+    // Arahkan ke dashboard masing-masing sesuai role
+    const dashboard = `${roleAccess[payload.role as string] || ""}/dashboard`;
+    return NextResponse.redirect(new URL(dashboard, req.url));
   }
 
-  // 4. Role tidak cocok
-  if (
-    (payload && pathname.startsWith("/admin") && payload.role !== "admin") ||
-    (payload &&
-      pathname.startsWith("/teacher") &&
-      payload.role !== "teacher") ||
-    (payload && pathname.startsWith("/student") && payload.role !== "student")
-  ) {
-    if (payload.role === "unregistered")
-      throw Error("Role Kamu 'unregister', ubah di postman.");
-    // Kembalikan ke asal atau halaman aman
-    return NextResponse.redirect(new URL("/", req.url));
+  // 4. Validasi Role & Path (Logic "Tendang" kamu)
+  const pathParts = pathname.split("/"); // ["", "admin", "dashboard"]
+  const currentFolder = `/${pathParts[1]}`;
+
+  // Cari tahu apakah folder ini termasuk folder ber-role (admin/teacher/student)
+  const folderRole = Object.keys(roleAccess).find(
+    (role) => roleAccess[role] === currentFolder,
+  );
+
+  if (folderRole) {
+    // A. Cek apakah role user cocok dengan folder yang diakses
+    if (payload.role !== folderRole) {
+      const targetDashboard = `${roleAccess[payload.role as string]}/dashboard`;
+      return NextResponse.redirect(new URL(targetDashboard, req.url));
+    }
+
+    // B. Cek sub-path (hanya boleh dashboard atau absence)
+    const subPath = pathParts[2];
+    if (!allowedSubPaths.includes(subPath)) {
+      return NextResponse.redirect(
+        new URL(`${currentFolder}/dashboard`, req.url),
+      );
+    }
   }
 
-  // 5. Semuanya Oke
   return NextResponse.next();
 }
 
