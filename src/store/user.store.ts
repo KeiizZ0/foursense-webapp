@@ -5,14 +5,14 @@ import { ShowMeData } from "@/type/user";
 import { create } from "zustand";
 
 interface AuthInterface {
-  hint: string;
+  FetchUser: ShowMeData[];
   accessToken: string;
   myData: ShowMeData | null;
   showMe: () => Promise<ShowMeData | null>;
 }
 
 export const useAuthStore = create<AuthInterface>((set) => ({
-  hint: "",
+  FetchUser: [],
   accessToken: "",
   myData: null,
 

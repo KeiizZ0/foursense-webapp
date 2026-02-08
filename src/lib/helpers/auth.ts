@@ -71,4 +71,5 @@ export async function logout() {
   const cookieStore = await cookies();
   cookieStore.delete("acctkn");
   cookieStore.delete("rftkn");
+  redirect("/");
 }

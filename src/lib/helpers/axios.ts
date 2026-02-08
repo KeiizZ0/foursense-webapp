@@ -26,36 +26,3 @@ ApiClient.interceptors.request.use(
   },
   (error) => Promise.reject(error),
 );
-
-// ApiClient.interceptors.response.use(
-//   (response) => response,
-//   async (error) => {
-//     const originalRequest = error.config;
-
-//     if (
-//       error.response?.status === 401 &&
-//       !originalRequest._retry &&
-//       !originalRequest.url?.includes("/auth/refresh")
-//     ) {
-//       originalRequest._retry = true;
-
-//       try {
-//         const refreshToken = await getCookie("rftkn");
-//         if (!refreshToken) throw Error("refreshridakada");
-//         const newToken = await refresh(refreshToken);
-
-//         if (newToken) {
-//           originalRequest.headers.Authorization = `Bearer ${newToken}`;
-//           return ApiClient(originalRequest);
-//         }
-//       } catch (err) {
-//         console.error("Refresh failed, logging out");
-//         console.log("kena logout");
-//         logout();
-//         window.location.href = "/";
-//       }
-//     }
-
-//     return Promise.reject(error);
-//   },
-// );

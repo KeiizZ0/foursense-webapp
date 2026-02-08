@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "./lib/helpers/jose";
 import { refresh } from "./lib/helpers/auth";
 
+const publicRoute = ["/", "/forgot-password"];
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const token = req.cookies.get("acctkn")?.value;
@@ -22,7 +24,7 @@ export async function middleware(req: NextRequest) {
   }
 
   // --- KONDISI B: Tidak ada token & akses halaman rahasia ---
-  if (!payload && !["/"].includes(pathname)) {
+  if (!payload && !publicRoute.includes(pathname)) {
     const loginUrl = new URL("/", req.url);
     const response = NextResponse.redirect(loginUrl);
 
@@ -33,12 +35,27 @@ export async function middleware(req: NextRequest) {
 
   // --- KONDISI C: Sudah login & akses halaman "/" ---
   if (payload && pathname === "/") {
-    const target = payload.role === "admin" ? "/admin" : "/student/dashboard";
+    var target = "";
+    if (payload.role === "admin") target = "/admin/dashboard";
+    else if (payload.role === "teacher") target = "/teacher/dashboard";
+    else if (payload.role === "student") target = "/student/dashboard";
+    else target = "/unregister";
     return NextResponse.redirect(new URL(target, req.url));
   }
 
   // --- KONDISI D: Role tidak cocok ---
-  if (payload && pathname.startsWith("/admin") && payload.role !== "admin") {
+  if (
+    (payload && pathname.startsWith("/admin") && payload.role !== "admin") ||
+    (payload &&
+      pathname.startsWith("/teacher") &&
+      payload.role !== "teacher") ||
+    (payload &&
+      pathname.startsWith("/student") &&
+      payload.role !== "student") ||
+    (payload &&
+      pathname.startsWith("/unregister") &&
+      payload.role !== "unregistered")
+  ) {
     // Kembalikan ke asal atau halaman aman
     return NextResponse.redirect(new URL("/", req.url));
   }
