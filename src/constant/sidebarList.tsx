@@ -1,6 +1,6 @@
 import { FileCheckCorner, Home, User } from "lucide-react";
 
-export const sidebarList = (id: string, name: string, role: string) => [
+export const sidebarList = (name: string, role: string) => [
   {
     Page: "Dashboard",
     Category: "Dashboard",

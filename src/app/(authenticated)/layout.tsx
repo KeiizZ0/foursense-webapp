@@ -1,8 +1,10 @@
+// layout itu akan muncul di file yang sejajar dan semua folder dibawahnya
+
 "use client";
 
 import "../globals.css";
 import { Search, SquareChevronLeft, SquareChevronRight } from "lucide-react";
-import { useAuthStore } from "@/store/user.store";
+import { useUserStorage } from "@/store/user.store";
 import { useEffect } from "react";
 import { logout } from "@/lib/helpers/auth";
 import { sidebarList } from "@/constant/sidebarList";
@@ -15,13 +17,14 @@ export default function RootLayout({
 }>) {
   const route = useRouter();
   const pathname = usePathname();
-  const { myData, showMe } = useAuthStore();
+  const { myData, showMe } = useUserStorage();
 
   useEffect(() => {
     if (!myData) showMe();
   }, []);
 
   return (
+    // data-theme adalah fitur dari daisyUi untuk tema dan color pallete, coba ganti ke "dark" atau tema lainnya yang terpasang di globals.css
     <div className="drawer lg:drawer-open" data-theme="light">
       <input id="my-drawer-4" type="checkbox" className="drawer-toggle" />
       <div className="drawer-content">
@@ -34,6 +37,7 @@ export default function RootLayout({
             <button className="btn btn-circle border">
               <Search />
             </button>
+            {/* Profile di Navbar */}
             <div className="dropdown dropdown-bottom dropdown-end">
               <div tabIndex={0} role="button" className="btn m-1 rounded-full">
                 {myData?.name.charAt(0)}
@@ -91,23 +95,21 @@ export default function RootLayout({
               </label>
             </li>
             {/* List item */}
-            {sidebarList(myData?.id!, myData?.name!, myData?.role!).map(
-              (a, i) => (
-                <li key={i + 1}>
-                  <button
-                    className="p-3 is-drawer-close:tooltip is-drawer-close:tooltip-right"
-                    data-tip={a.Page}
-                    onClick={
-                      pathname !== a.link ? () => route.push(a.link) : undefined
-                    }
-                  >
-                    {/* Settings icon */}
-                    {a.Icon}
-                    <span className="is-drawer-close:hidden">{a.Page}</span>
-                  </button>
-                </li>
-              ),
-            )}
+            {sidebarList(myData?.name!, myData?.role!).map((a, i) => (
+              <li key={i + 1}>
+                <button
+                  className="p-3 is-drawer-close:tooltip is-drawer-close:tooltip-right"
+                  data-tip={a.Page}
+                  onClick={
+                    pathname !== a.link ? () => route.push(a.link) : undefined
+                  }
+                >
+                  {/* Settings icon */}
+                  {a.Icon}
+                  <span className="is-drawer-close:hidden">{a.Page}</span>
+                </button>
+              </li>
+            ))}
           </ul>
         </div>
       </div>

@@ -2,15 +2,13 @@
 
 import { InputFloatingLabel } from "@/components/ui/input";
 import { login } from "@/lib/helpers/auth";
-import { LoginShcema } from "@/schema/auth";
-import { useAuthStore } from "@/store/user.store";
-import { LoginReq } from "@/type/auth";
+import { LoginShcema } from "@/schema/auth.schema";
+import { LoginReq } from "@/type/auth.type";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useRouter } from "next/navigation";
 import { SubmitHandler, useForm } from "react-hook-form";
 
 export default function Home() {
-  const { showMe } = useAuthStore();
   const router = useRouter();
   const {
     handleSubmit,
@@ -23,7 +21,6 @@ export default function Home() {
   const onSubmit: SubmitHandler<LoginReq> = async (payload: LoginReq) => {
     const res = await login(payload);
     if (res.success) {
-      showMe();
       router.push("/");
     }
   };

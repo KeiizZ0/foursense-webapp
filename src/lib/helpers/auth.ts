@@ -4,7 +4,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getCookie, setCookie } from "./cookies";
-import { AuthRes, LoginReq } from "@/type/auth";
+import { AuthRes, LoginReq } from "@/type/auth.type";
 
 export async function login(body: LoginReq) {
   if (!body) {

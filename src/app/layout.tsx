@@ -1,3 +1,4 @@
+// layout itu akan muncul di file yang sejajar dan semua folder dibawahnya
 "use client";
 
 import "./globals.css";

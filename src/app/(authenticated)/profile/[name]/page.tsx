@@ -9,5 +9,8 @@ export default async function ProfilePage({
 }) {
   const { name } = await params;
 
-  return <Profile name={name} />;
+  // server side tidak bisa memanggil fungsi ataupun data dari zustand store
+  // karena file ini terpaksa menjadi server side, 
+  // kita akali dengan menggunakan component yang didalamnya berisi client side
+  return <Profile name={name} />; // ctrl + klik Profile
 }
