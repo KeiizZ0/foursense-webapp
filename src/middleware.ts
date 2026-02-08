@@ -10,6 +10,7 @@ export async function middleware(req: NextRequest) {
   const refresh_token = req.cookies.get("rftkn")?.value;
   var payload = token ? await verifyToken(token) : null;
 
+  // 1. payload gagal tapi ada refresh token
   if (!payload && refresh_token) {
     const data = await refresh(refresh_token);
     if (data?.data?.accessToken) {
@@ -18,22 +19,24 @@ export async function middleware(req: NextRequest) {
       const loginUrl = new URL("/", req.url);
       const response = NextResponse.redirect(loginUrl);
 
+      // Hapus access dan refresh kadaluarsa/rusak
       response.cookies.delete("acctkn");
+      response.cookies.delete("rftkn");
       return response;
     }
   }
 
-  // --- KONDISI B: Tidak ada token & akses halaman rahasia ---
+  // 2. ada token & akses halaman rahasia
   if (!payload && !publicRoute.includes(pathname)) {
     const loginUrl = new URL("/", req.url);
     const response = NextResponse.redirect(loginUrl);
 
-    // Hapus cookie agar bersih (Return yang baik adalah yang membersihkan sampah)
+    // Hapus access kadaluarsa/rusak
     response.cookies.delete("acctkn");
     return response;
   }
 
-  // --- KONDISI C: Sudah login & akses halaman "/" ---
+  // 3. Sudah login & akses halaman "/"
   if (payload && pathname === "/") {
     var target = "";
     if (payload.role === "admin") target = "/admin/dashboard";
@@ -43,24 +46,21 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL(target, req.url));
   }
 
-  // --- KONDISI D: Role tidak cocok ---
+  // 4. Role tidak cocok
   if (
     (payload && pathname.startsWith("/admin") && payload.role !== "admin") ||
     (payload &&
       pathname.startsWith("/teacher") &&
       payload.role !== "teacher") ||
-    (payload &&
-      pathname.startsWith("/student") &&
-      payload.role !== "student") ||
-    (payload &&
-      pathname.startsWith("/unregister") &&
-      payload.role !== "unregistered")
+    (payload && pathname.startsWith("/student") && payload.role !== "student")
   ) {
+    if (payload.role === "unregistered")
+      throw Error("Role Kamu 'unregister', ubah di postman.");
     // Kembalikan ke asal atau halaman aman
     return NextResponse.redirect(new URL("/", req.url));
   }
 
-  // --- KONDISI D: Semuanya Oke ---
+  // 5. Semuanya Oke
   return NextResponse.next();
 }
 
