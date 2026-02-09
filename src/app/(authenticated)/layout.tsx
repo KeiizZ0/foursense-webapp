@@ -25,7 +25,7 @@ export default function RootLayout({
 
   return (
     // data-theme adalah fitur dari daisyUi untuk tema dan color pallete, coba ganti ke "dark" atau tema lainnya yang terpasang di globals.css
-    <div className="drawer lg:drawer-open" data-theme="light">
+    <div className="drawer lg:drawer-open">
       <input id="my-drawer-4" type="checkbox" className="drawer-toggle" />
       <div className="drawer-content">
         {/* Navbar */}
@@ -96,20 +96,29 @@ export default function RootLayout({
             </li>
             {/* List item */}
             {sidebarList(myData?.name!, myData?.role!).map((a, i) => (
-              <li key={i + 1}>
-                <button
-                  className="p-3 is-drawer-close:tooltip is-drawer-close:tooltip-right"
-                  data-tip={a.Page}
-                  onClick={
-                    pathname !== a.link ? () => route.push(a.link) : undefined
-                  }
-                >
-                  {/* Settings icon */}
-                  {a.Icon}
-                  <span className="is-drawer-close:hidden">{a.Page}</span>
-                </button>
-              </li>
-            ))}
+  <li key={i + 1}>
+    <button
+      className={`
+        p-3 rounded-lg transition-all duration-200
+        is-drawer-close:tooltip is-drawer-close:tooltip-right
+
+        hover:bg-blue-600
+        hover:text-white
+        hover:shadow-md
+
+        ${pathname === a.link ? "bg-blue-600 text-white" : ""}
+      `}
+      data-tip={a.Page}
+      onClick={
+        pathname !== a.link ? () => route.push(a.link) : undefined
+      }
+    >
+      {a.Icon}
+      <span className="is-drawer-close:hidden">{a.Page}</span>
+    </button>
+  </li>
+))}
+
           </ul>
         </div>
       </div>
