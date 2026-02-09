@@ -1,5 +1,9 @@
-"use client";
+import AbsencePage from "@/components/absence/AbsencePage";
+
+export const metadata = {
+  title: "Tugas & Absensi",
+};
 
 export default function Absence() {
-  return <div className="flex justify-center items-center"></div>;
+  return <AbsencePage />;
 }
