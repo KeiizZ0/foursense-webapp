@@ -148,13 +148,7 @@ export default function StudentProfilePage() {
 
         {/* Quick Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
-          <Card>
-            <CardContent className="pt-2 sm:pt-4 md:pt-6 px-2 sm:px-6 py-2 sm:py-6 text-center">
-              <Award className="h-4 w-4 sm:h-6 md:h-8 text-yellow-600 mx-auto mb-1 sm:mb-2" />
-              <div className="text-lg sm:text-xl md:text-2xl font-bold">12</div>
-              <p className="text-xs sm:text-sm text-slate-600">Penghargaan</p>
-            </CardContent>
-          </Card>
+          
           <Card>
             <CardContent className="pt-2 sm:pt-4 md:pt-6 px-2 sm:px-6 py-2 sm:py-6 text-center">
               <Calendar className="h-4 w-4 sm:h-6 md:h-8 text-blue-600 mx-auto mb-1 sm:mb-2" />
