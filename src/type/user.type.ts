@@ -9,4 +9,6 @@ export type ShowMeData = {
   name: string;
   email: string;
   role: "unregistered" | "student" | "teacher" | "admin";
+  nis?: string;
+  kelas?: string;
 };
