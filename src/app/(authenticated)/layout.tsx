@@ -102,11 +102,11 @@ export default function RootLayout({
         p-3 rounded-lg transition-all duration-200
         is-drawer-close:tooltip is-drawer-close:tooltip-right
 
-        hover:bg-blue-600
-        hover:text-white
+        hover:bg-primary
+        hover:text-primary-foreground
         hover:shadow-md
 
-        ${pathname === a.link ? "bg-blue-600 text-white" : ""}
+        ${pathname === a.link ? "bg-primary text-primary-foreground" : ""}
       `}
       data-tip={a.Page}
       onClick={

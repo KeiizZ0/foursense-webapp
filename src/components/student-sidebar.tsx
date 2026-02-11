@@ -45,7 +45,7 @@ export function StudentSidebar() {
       </div>
 
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex w-64 bg-slate-800 text-white flex-col fixed left-0 top-0 h-screen shadow-xl">
+      <aside className="hidden lg:flex w-64 bg-base-100 text-base-content flex-col fixed left-0 top-0 h-screen shadow-xl">
         {/* Header */}
         <div className="p-6 border-b border-slate-700">
           <h2 className="text-2xl font-bold">FourSense</h2>

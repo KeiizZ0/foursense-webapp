@@ -128,9 +128,9 @@ export default function AbsencePage() {
 
       <button
         disabled
-        className="w-full py-2 bg-gray-300 text-gray-500 rounded cursor-not-allowed"
+        className="w-28 h-28 bg-gradient-to-br from-green-400 to-green-600 text-white rounded-full cursor-not-allowed flex flex-col items-center justify-center mx-auto shadow-2xl hover:shadow-green-500/50 transition-all duration-300 transform hover:scale-105 border-4 border-green-300"
       >
-        Absensi 
+        <span className="font-bold text-sm">Absensi</span>
       </button>
     </div>
 

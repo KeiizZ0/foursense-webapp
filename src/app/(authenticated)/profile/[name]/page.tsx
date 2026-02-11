@@ -49,7 +49,7 @@ export default function StudentProfilePage() {
         <Card className="border-0 shadow-lg bg-gradient-to-r from-blue-50 to-indigo-50">
           <CardContent className="pt-4 sm:pt-6 md:pt-8 pb-4 sm:pb-6 md:pb-8 px-3 sm:px-6">
             <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 md:gap-6">
-              <div className="w-12 h-12 sm:w-16 md:w-20 md:h-20 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
+              <div className="w-12 h-12 sm:w-16 md:w-20 md:h-20 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
                 <User className="h-6 w-6 sm:h-8 md:h-10 text-white" />
               </div>
               <div className="flex-1 text-center sm:text-left min-w-0">
@@ -92,7 +92,7 @@ export default function StudentProfilePage() {
         </Card>
 
         {/* Academic Information */}
-        <Card>
+        {/* <Card>
           <CardHeader className="p-3 sm:p-4 md:p-6">
             <CardTitle className="flex items-center gap-2 text-sm sm:text-lg md:text-xl">
               <BookOpen className="h-4 w-4 sm:h-5 text-blue-600 flex-shrink-0" />
@@ -117,7 +117,7 @@ export default function StudentProfilePage() {
               <span className="font-semibold text-purple-600 text-xs sm:text-sm md:text-base">24</span>
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
 
         {/* Contact Information */}
         <Card>

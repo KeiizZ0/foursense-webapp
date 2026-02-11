@@ -1,11 +1,11 @@
 "use client";
 
 import { ApiClient } from "@/lib/helpers/axios"; // ready to use component, sebaiknya jangan diubah
-import { ShowMeData, UserRes } from "@/type/user.type"; // pendefinisian data disimpan disini
+import { UserData, UserRes } from "@/type/user.type"; // pendefinisian data disimpan disini
 
-export async function showMeAPI(): Promise<ShowMeData> {
+export async function showMeAPI(): Promise<UserData> {
   // return akan mengembalikan show me data
-  const res = await ApiClient.get<UserRes>("/api/auth/me", {
+  const res = await ApiClient.get<UserRes>("/api/user/me", {
     // perhatikan methodnya ".get", jangan sampai salah dengan yang di postman
     headers: {
       "Content-Type": "application/json", // dikirim sebagai json
