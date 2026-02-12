@@ -8,7 +8,7 @@ const roleAccess: Record<string, string> = {
   teacher: "/teacher",
   student: "/student",
 };
-const allowedSubPaths = ["dashboard", "absence"];
+const allowedSubPaths = ["dashboard", "absence", "DataSiswa"];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -26,7 +26,6 @@ export async function middleware(req: NextRequest) {
   }
 
   // 2. Jika TIDAK LOGIN
-  console.log(payload)
   if (!payload) {
     // Biarkan jika akses halaman publik
     if (publicRoute.includes(pathname)) return NextResponse.next();
