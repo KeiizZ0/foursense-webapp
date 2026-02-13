@@ -10,6 +10,13 @@ export type ShowMeData = {
   id: string;
   name: string;
   email: string;
-  role: "unregistered" | "student" | "teacher" | "admin";
+  role: Role;
   student: StudentData;
 };
+
+export enum Role {
+  unregistered,
+  student,
+  teacher,
+  admin,
+}
