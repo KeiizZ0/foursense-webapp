@@ -1,3 +1,5 @@
+import { StudentData } from "./student";
+
 export type UserRes = {
   success: boolean;
   message: string;
@@ -8,9 +10,16 @@ export type UserData = {
   id: string;
   name: string;
   email: string;
-  role: "unregistered" | "student" | "teacher" | "admin";
-  studentClasses: studentClasses
+  role: Role;
+  student: StudentData;
 };
+
+export enum Role {
+  unregistered,
+  student,
+  teacher,
+  admin,
+}
 
 export type studentClasses = {
   nis:number
