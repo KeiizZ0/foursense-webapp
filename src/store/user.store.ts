@@ -4,22 +4,24 @@
 
 "use client"; // zustand hanya bisa dijalankan di client side
 
-import { getOneUserAPI, showMeAPI } from "@/restApi/user.api";
-import {  UserData, UserRes } from "@/type/user.type";
+import { GetOneUserAPI, ShowMeAPI } from "@/restApi/user.api";
+import {
+  GetAllUserData,
+  GetOneUserData,
+  ShowMeUserData,
+} from "@/type/user.type";
 import { create } from "zustand";
 
-interface AuthInterface {
+interface UsersInterface {
   // agar fungsi atau data dari zustand store bisa dilihat dari page lain, zustand store harus didefinisikan datanya terlebih dahulu
-  FetchUser: UserData[]; // karena ada [], maka dihitung sebagai array
-  FetchOneUser: UserData | null; // dihitung sebagai object
-  accessToken: string;
-  myData: UserData | null;
-  showMe: () => Promise <UserData | null>; // ini definisi untuk fungsi showMe, promise adalah pendefinisian data return
-  getOne: () => Promise<UserData | null>; // ini definisi untuk fungsi showMe, promise adalah pendefinisian data return
-  
+  FetchUser: GetAllUserData[]; // karena ada [], maka dihitung sebagai array
+  FetchOneUser: GetOneUserData | null; // dihitung sebagai object
+  myData: ShowMeUserData | null;
+  showMe: () => Promise<ShowMeUserData | null>; // ini definisi untuk fungsi showMe, promise adalah pendefinisian data return
+  getOne: () => Promise<GetOneUserData | null>; // ini definisi untuk fungsi showMe, promise adalah pendefinisian data return
 }
 
-export const useUserStorage = create<AuthInterface>((set) => ({
+export const useUserStorage = create<UsersInterface>((set) => ({
   // set disini adalah "fitur" milik zustand store, fungsinya untuk menyimpan data di dalam fungsi
   FetchUser: [], // tempat penyimpanan untuk fungsi user get all
   FetchOneUser: null,
@@ -28,7 +30,7 @@ export const useUserStorage = create<AuthInterface>((set) => ({
 
   showMe: async () => {
     try {
-      const res: UserData = await showMeAPI(); // show me API adalah fungsi yang dipanggil dalam restApi/user.api.ts
+      const res: ShowMeUserData = await ShowMeAPI(); // show me API adalah fungsi yang dipanggil dalam restApi/user.api.ts
       set({ myData: res });
       return res;
     } catch (error) {
@@ -36,14 +38,13 @@ export const useUserStorage = create<AuthInterface>((set) => ({
     }
   },
   getOne: async () => {
-    const { myData } = useUserStorage.getState()
+    const { myData } = useUserStorage.getState();
     try {
-      const res: UserData = await getOneUserAPI(myData?.id || ""); // show me API adalah fungsi yang dipanggil dalam restApi/user.api.ts
-      set({ myData: res });
+      const res: GetOneUserData = await GetOneUserAPI(myData?.id || ""); // show me API adalah fungsi yang dipanggil dalam restApi/user.api.ts
+      set({ FetchOneUser: res });
       return res;
     } catch (error) {
       return null;
     }
-  }
-
+  },
 }));

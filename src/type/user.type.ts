@@ -1,17 +1,65 @@
-import { StudentData } from "./student";
+import { ClassGrade } from "./class.type";
+import {} from "./student.type";
 
-export type UserRes = {
+export type ShowMeRes = {
   success: boolean;
   message: string;
-  data: UserData;
+  data: ShowMeUserData;
 };
 
-export type UserData = {
+export type ShowMeUserData = {
+  id: string;
+  name: string;
+  role: Role;
+  email: string;
+  student: ShowMeStudentData;
+};
+
+type ShowMeStudentData = {
+  id: string;
+  class: ShowMeClassData;
+};
+
+type ShowMeClassData = {
+  id: string;
+  classes: ClassGrade;
+  major: string;
+};
+
+export type GetAllUserRes = {
+  success: boolean;
+  message: string;
+  data: GetAllUserData;
+};
+
+export type GetAllUserData = {
+  id: string;
+  name: string;
+  role: Role;
+  email: string;
+  student: GetAllStudentData;
+};
+
+export type GetAllStudentData = {
+  nis: number;
+};
+
+export type GetOneUserRes = {
+  success: boolean;
+  message: string;
+  data: GetOneUserData;
+};
+
+export type GetOneUserData = {
   id: string;
   name: string;
   email: string;
   role: Role;
-  student: StudentData;
+  student: GetOneStudentData;
+};
+
+export type GetOneStudentData = {
+  nis: number;
 };
 
 export enum Role {
@@ -19,23 +67,4 @@ export enum Role {
   student,
   teacher,
   admin,
-}
-
-export type studentClasses = {
-  nis:number
-  absences: absences[]
-}
-
-export type absences = {
-  date: Date
-  absence_time: Date
-  status: Status
-  has_todo: boolean
-}
-
-enum Status {
-  present,
-  onLeave,
-  ill,
-  unexcused
 }

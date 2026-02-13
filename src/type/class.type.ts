@@ -1,23 +1,21 @@
-import { StudentData } from "./student";
-
-export type ClassRes = {
+export type GetAllClassRes = {
   success: boolean;
   message: string;
-  data: ClassData;
+  data: GetAllClassData;
 };
 
-export type ClassData = {
+export type GetAllClassData = {
   id: string;
   classes: ClassGrade;
   major: string;
   academicYear: string;
-  student: StudentData[];
+  // student: StudentData[];
   createdAt: Date;
   updatedAt: Date;
 };
 
 export enum ClassGrade {
-  X,
-  XI,
-  XII,
+  X = "X",
+  XI = "XI",
+  XII = "XII",
 }

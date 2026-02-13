@@ -1,10 +1,10 @@
-export type TodoRes = {
+export type GetAllTodoRes = {
   success: boolean;
   message: string;
-  data: TodoData;
+  data: GetAllTodoData;
 };
 
-export type TodoData = {
+export type GetAllTodoData = {
   id: string;
   student_id: string;
   activity: string;

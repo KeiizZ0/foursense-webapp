@@ -1,10 +1,10 @@
-export type AbsencesRes = {
+export type GetAllAbsencesRes = {
   success: boolean;
   message: string;
-  data: AbsencesData;
+  data: GetAllAbsencesData;
 };
 
-export type AbsencesData = {
+export type GetAllAbsencesData = {
   id: string;
   student_id: string;
   absence_time: Date;
@@ -13,8 +13,9 @@ export type AbsencesData = {
 };
 
 export enum Status {
-  present,
-  onLeave,
-  ill,
-  unexcused,
+  present = "present",
+  onLeave = "onLeave",
+  ill = "ill",
+  late = "late",
+  unexcused = "unexcused",
 }
