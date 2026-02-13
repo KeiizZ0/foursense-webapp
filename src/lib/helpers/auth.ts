@@ -53,7 +53,9 @@ export async function refresh(refresh: string) {
 
   if (data.success) {
     await setCookie("acctkn", data.data.accessToken);
-    await setCookie("rftkn", data.data.refreshToken);
+    await setCookie("rftkn", data.data.refreshToken, {
+      maxAge: 60 * 60 * 24 * 14,
+    });
     return {
       success: true,
       message: "Success refresh",

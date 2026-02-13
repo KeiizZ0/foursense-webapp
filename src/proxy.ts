@@ -10,7 +10,7 @@ const roleAccess: Record<string, string> = {
 };
 const allowedSubPaths = ["dashboard", "absence"];
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const token = req.cookies.get("acctkn")?.value;
   const refresh_token = req.cookies.get("rftkn")?.value;
