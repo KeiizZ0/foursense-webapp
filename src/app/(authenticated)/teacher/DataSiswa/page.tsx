@@ -3,14 +3,7 @@
 import { Search, Mail, Phone, Eye } from "lucide-react";
 
 const dataSiswa = [
-  {
-    nama: "Ahmad Wirawan",
-    nisn: "0012345678",
-    email: "ahmad@school.com",
-    telp: "08123456789",
-    hadir: 25,
-    tugas: 11,
-  },
+  
   {
     nama: "Siti Nurhaliza",
     nisn: "0012345679",
