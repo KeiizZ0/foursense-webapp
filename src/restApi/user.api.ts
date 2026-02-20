@@ -1,11 +1,11 @@
 "use client";
 
 import { ApiClient } from "@/lib/helpers/axios"; // ready to use component, sebaiknya jangan diubah
-import { UserData, UserRes } from "@/type/user.type"; // pendefinisian data disimpan disini
+import { GetOneUserRes, ShowMeData, ShowMeRes } from "@/type/user.type"; // pendefinisian data disimpan disini
 
-export async function showMeAPI(): Promise<UserData> {
+export async function ShowMeAPI(): Promise<ShowMeData> {
   // return akan mengembalikan show me data
-  const res = await ApiClient.get<UserRes>("/api/user/me", {
+  const res = await ApiClient.get<ShowMeRes>("/api/user/me", {
     // perhatikan methodnya ".get", jangan sampai salah dengan yang di postman
     headers: {
       "Content-Type": "application/json", // dikirim sebagai json
@@ -14,11 +14,11 @@ export async function showMeAPI(): Promise<UserData> {
     withCredentials: true, // untuk menggirimkan cookie dan headers
   });
 
-  return res.data.data // data ini nantinya akan dikirim ke zustand store user
+  return res.data.data; // data ini nantinya akan dikirim ke zustand store user
 }
 
-export async function getOneUserAPI(id: string) {
-  const res = await ApiClient.get<UserRes> (`api/user/get-one/${id}`, {
+export async function GetOneUserAPI(id: string) {
+  const res = await ApiClient.get<GetOneUserRes>(`api/user/get-one/${id}`, {
     headers: {
       "Content-Type": "applicantion/json",
       "ngrok-skip-browser-warning": "true",
