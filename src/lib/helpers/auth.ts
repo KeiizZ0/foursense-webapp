@@ -11,24 +11,40 @@ export async function login(body: LoginReq) {
     return { success: false, message: "Insert email and password!" };
   }
 
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "ngrok-skip-browser-warning": "true",
-    },
-    body: JSON.stringify(body), // Email & Password
-  });
+  try {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true",
+        },
+        body: JSON.stringify(body), // Email & Password
+      },
+    );
 
-  const data: AuthRes = await res.json();
+    const data: AuthRes = await res.json();
 
-  if (data.success) {
-    await setCookie("acctkn", data.data.accessToken);
-    await setCookie("rftkn", data.data.refreshToken);
-    return { success: true, message: "" };
+    if (data.success) {
+      await setCookie("acctkn", data.data.accessToken);
+      await setCookie("rftkn", data.data.refreshToken);
+      return { success: true, message: "" };
+    }
+
+    return { success: false, message: "Invalid email or password!" };
+  } catch (error) {
+    throw Error(
+      `Somenthing went wrong
+
+      Probability :
+      1. Server is inactive. 
+      2. You are using wrong API URL or ACCESS SECRET.
+      3. You are not using "ngrok-skip-browser-warning": "true"
+
+      ${error}`,
+    );
   }
-
-  return { success: false, message: "Invalid email or password!" };
 }
 
 export async function refresh(refresh: string) {
