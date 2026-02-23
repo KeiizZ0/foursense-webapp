@@ -8,7 +8,7 @@ const roleAccess: Record<string, string> = {
   teacher: "/teacher",
   student: "/student",
 };
-const allowedSubPaths = ["dashboard", "absence"];
+const allowedSubPaths = ["dashboard", "absence", "DataSiswa"];
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
