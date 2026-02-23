@@ -9,10 +9,10 @@ export default function Dashboard() {
   const { myData } = useUserStorage();
   const { FetchOneStudent, getOne } = useStudentStorage();
   useEffect(() => {
-    if (myData?.student.id && !FetchOneStudent) {
+    if (myData?.student && !FetchOneStudent) {
       getOne(myData?.student.id);
     }
-  }, [FetchOneStudent, myData?.student.id]);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
