@@ -27,9 +27,12 @@ export function useAuth() {
   }, [])
 
   const logout = () => {
+    // Clear all localStorage items related to user session
     localStorage.removeItem('user')
     localStorage.removeItem('todos')
     localStorage.removeItem('attendance')
+    // Clear any other potential session data
+    localStorage.clear()
     setUser(null)
     router.push('/')
   }

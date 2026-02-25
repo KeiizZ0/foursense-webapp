@@ -5,9 +5,12 @@ import { useRouter, usePathname } from 'next/navigation'
 import { LogOut, BarChart3, User, BookOpen, Menu, X } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
+import { useUserStorage } from '@/store/user.store'
+import { clientLogout } from '@/lib/helpers/client-auth'
 
 export function StudentSidebar() {
   const { user, logout } = useAuth()
+  const { reset } = useUserStorage()
   const router = useRouter()
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -18,6 +21,11 @@ export function StudentSidebar() {
   ]
 
   const handleLogout = () => {
+    // Clear localStorage
+    clientLogout()
+    // Reset zustand store
+    reset()
+    // Call logout from useAuth which clears localStorage and redirects
     logout()
     router.push('/')
   }

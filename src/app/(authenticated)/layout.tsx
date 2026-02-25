@@ -1,4 +1,4 @@
-// layout itu akan muncul di file yang sejajar dan semua folder dibawahnya
+// layout itu akan muncul di file yang sejajar dan semua folder dessousnya
 
 "use client";
 
@@ -7,6 +7,7 @@ import { Search, SquareChevronLeft, SquareChevronRight } from "lucide-react";
 import { useUserStorage } from "@/store/user.store";
 import { useEffect } from "react";
 import { logout } from "@/lib/helpers/auth";
+import { clientLogout } from "@/lib/helpers/client-auth";
 import { sidebarList } from "@/constant/sidebarList";
 import { usePathname, useRouter } from "next/navigation";
 
@@ -17,7 +18,7 @@ export default function RootLayout({
 }>) {
   const route = useRouter();
   const pathname = usePathname();
-  const { myData, showMe } = useUserStorage();
+  const { myData, showMe, reset } = useUserStorage();
 
   useEffect(() => {
     if (!myData) showMe();
@@ -62,7 +63,14 @@ export default function RootLayout({
                   <a>Settings</a>
                 </li>
                 <li>
-                  <a onClick={async () => await logout()}>Logout</a>
+                  <a onClick={async () => {
+                    // Clear localStorage
+                    clientLogout();
+                    // Reset zustand store
+                    reset();
+                    // Call server logout to delete cookies and redirect
+                    await logout();
+                  }}>Logout</a>
                 </li>
               </ul>
             </div>

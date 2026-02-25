@@ -16,6 +16,7 @@ interface AuthInterface {
   myData: UserData | null;
   showMe: () => Promise <UserData | null>; // ini definisi untuk fungsi showMe, promise adalah pendefinisian data return
   getOne: () => Promise<UserData | null>; // ini definisi untuk fungsi showMe, promise adalah pendefinisian data return
+  reset: () => void; // fungsi untuk mereset state saat logout
   
 }
 
@@ -44,6 +45,15 @@ export const useUserStorage = create<AuthInterface>((set) => ({
     } catch (error) {
       return null;
     }
-  }
+  },
+  reset: () => {
+    // Fungsi untuk mereset semua state saat logout
+    set({
+      FetchUser: [],
+      FetchOneUser: null,
+      accessToken: "",
+      myData: null,
+    });
+  },
 
 }));
