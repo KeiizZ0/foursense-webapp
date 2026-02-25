@@ -63,8 +63,8 @@ export type GetOneStudentData = {
 };
 
 export enum Role {
-  unregistered,
-  student,
-  teacher,
-  admin,
+  unregistered = "unregistered",
+  student = "student",
+  teacher = "teacher",
+  admin = "admin",
 }

@@ -7,7 +7,6 @@ import { Search, SquareChevronLeft, SquareChevronRight } from "lucide-react";
 import { useUserStorage } from "@/store/user.store";
 import { useEffect } from "react";
 import { logout } from "@/lib/helpers/auth";
-import { clientLogout } from "@/lib/helpers/client-auth";
 import { sidebarList } from "@/constant/sidebarList";
 import { usePathname, useRouter } from "next/navigation";
 
@@ -18,10 +17,10 @@ export default function RootLayout({
 }>) {
   const route = useRouter();
   const pathname = usePathname();
-  const { myData, showMe, reset } = useUserStorage();
+  const { myData, showMe } = useUserStorage();
 
   useEffect(() => {
-    if (!myData) showMe();
+    showMe();
   }, []);
 
   return (
@@ -63,14 +62,13 @@ export default function RootLayout({
                   <a>Settings</a>
                 </li>
                 <li>
-                  <a onClick={async () => {
-                    // Clear localStorage
-                    clientLogout();
-                    // Reset zustand store
-                    reset();
-                    // Call server logout to delete cookies and redirect
-                    await logout();
-                  }}>Logout</a>
+                  <a
+                    onClick={async () => {
+                      await logout();
+                    }}
+                  >
+                    Logout
+                  </a>
                 </li>
               </ul>
             </div>
@@ -104,9 +102,9 @@ export default function RootLayout({
             </li>
             {/* List item */}
             {sidebarList(myData?.name!, myData?.role!).map((a, i) => (
-  <li key={i + 1}>
-    <button
-      className={`
+              <li key={i + 1}>
+                <button
+                  className={`
         p-3 rounded-lg transition-all duration-200
         is-drawer-close:tooltip is-drawer-close:tooltip-right
 
@@ -116,17 +114,16 @@ export default function RootLayout({
 
         ${pathname === a.link ? "bg-primary text-primary-foreground" : ""}
       `}
-      data-tip={a.Page}
-      onClick={
-        pathname !== a.link ? () => route.push(a.link) : undefined
-      }
-    >
-      {a.Icon}
-      <span className="is-drawer-close:hidden">{a.Page}</span>
-    </button>
-  </li>
-))}
-
+                  data-tip={a.Page}
+                  onClick={
+                    pathname !== a.link ? () => route.push(a.link) : undefined
+                  }
+                >
+                  {a.Icon}
+                  <span className="is-drawer-close:hidden">{a.Page}</span>
+                </button>
+              </li>
+            ))}
           </ul>
         </div>
       </div>

@@ -1,7 +1,7 @@
+import { Role } from "@/type/user.type";
 import { FileCheckCorner, Home, User, Users } from "lucide-react";
 
-export const sidebarList = (name: string, role: string) => {
-
+export const sidebarList = (name: string, role: Role) => {
   const menu = [
     {
       Page: "Dashboard",
