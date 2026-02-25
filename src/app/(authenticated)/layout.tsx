@@ -1,4 +1,4 @@
-// layout itu akan muncul di file yang sejajar dan semua folder dibawahnya
+// layout itu akan muncul di file yang sejajar dan semua folder dessousnya
 
 "use client";
 
@@ -7,6 +7,7 @@ import { Search, SquareChevronLeft, SquareChevronRight } from "lucide-react";
 import { useUserStorage } from "@/store/user.store";
 import { useEffect } from "react";
 import { logout } from "@/lib/helpers/auth";
+import { clientLogout } from "@/lib/helpers/client-auth";
 import { sidebarList } from "@/constant/sidebarList";
 import { usePathname, useRouter } from "next/navigation";
 
@@ -17,7 +18,7 @@ export default function RootLayout({
 }>) {
   const route = useRouter();
   const pathname = usePathname();
-  const { myData, showMe } = useUserStorage();
+  const { myData, showMe, reset } = useUserStorage();
 
   useEffect(() => {
     if (!myData) showMe();
@@ -62,7 +63,14 @@ export default function RootLayout({
                   <a>Settings</a>
                 </li>
                 <li>
-                  <a onClick={async () => await logout()}>Logout</a>
+                  <a onClick={async () => {
+                    // Clear localStorage
+                    clientLogout();
+                    // Reset zustand store
+                    reset();
+                    // Call server logout to delete cookies and redirect
+                    await logout();
+                  }}>Logout</a>
                 </li>
               </ul>
             </div>
@@ -102,11 +110,11 @@ export default function RootLayout({
         p-3 rounded-lg transition-all duration-200
         is-drawer-close:tooltip is-drawer-close:tooltip-right
 
-        hover:bg-blue-600
-        hover:text-white
+        hover:bg-primary
+        hover:text-primary-foreground
         hover:shadow-md
 
-        ${pathname === a.link ? "bg-blue-600 text-white" : ""}
+        ${pathname === a.link ? "bg-primary text-primary-foreground" : ""}
       `}
       data-tip={a.Page}
       onClick={

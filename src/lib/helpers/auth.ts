@@ -3,7 +3,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { getCookie, setCookie } from "./cookies";
+import { getCookie, setCookie, deleteCookie } from "./cookies";
 import { AuthRes, LoginReq } from "@/type/auth.type";
 
 export async function login(body: LoginReq) {
@@ -86,8 +86,11 @@ export async function refresh(refresh: string) {
 }
 
 export async function logout() {
-  const cookieStore = await cookies();
-  cookieStore.delete("acctkn");
-  cookieStore.delete("rftkn");
+  // Delete cookies
+  await deleteCookie("acctkn");
+  await deleteCookie("rftkn");
+  
+  // Redirect to home - the client side will handle localStorage clearing
   redirect("/");
 }
+

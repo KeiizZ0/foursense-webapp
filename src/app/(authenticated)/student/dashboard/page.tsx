@@ -21,67 +21,37 @@ export default function Dashboard() {
         Selamat datang! Kelola kehadiran dan todo list Anda di sini.
       </p>
 
-      <div className="flex flex-row max-sm:flex-wrap gap-4 mb-6">
-        <Card
-          title="Total Hadir"
-          description="dari 7 hari"
-          color="green"
-          content={
-            FetchOneStudent?.absences
-              ? FetchOneStudent?.absences?.filter((a) => a.status === "present")
-                  ?.length
-              : undefined
-          }
-        />
+      {/* CARD STATISTIK */}
+      <div className="grid md:grid-cols-3 gap-4 mb-6">
+        {/* Total Hadir */}
+        <div className="bg-white rounded-xl shadow p-4">
+          <div className="flex justify-between">
+            <h2 className="font-semibold">Total Hadir</h2>
+            <span className="text-green-500">●</span>
+          </div>
+          <p className="text-3xl font-bold mt-2">{totalHadir}</p>
+          <p className="text-sm text-gray-400"></p>
+        </div>
 
-        <Card
-          title="Total Sakit"
-          description="dari 7 hari"
-          color="purple"
-          content={
-            FetchOneStudent?.absences
-              ? FetchOneStudent?.absences?.filter((a) => a.status === "ill")
-                  ?.length
-              : undefined
-          }
-        />
+        {/* Tugas Aktif */}
+        <div className="bg-white rounded-xl shadow p-4">
+          <div className="flex justify-between">
+            <h2 className="font-semibold">Sakit</h2>
+            <span className="text-blue-500">●</span>
+          </div>
+          <p className="text-3xl font-bold mt-2">{tugasAktif}</p>
+          <p className="text-sm text-gray-400"></p>
+        </div>
 
-        <Card
-          title="Total Izin"
-          description="dari 7 hari"
-          color="blue"
-          content={
-            FetchOneStudent?.absences
-              ? FetchOneStudent?.absences?.filter((a) => a.status === "onLeave")
-                  ?.length
-              : undefined
-          }
-        />
-
-        <Card
-          title="Total Terlambat"
-          description="dari 7 hari"
-          color="yellow"
-          content={
-            FetchOneStudent?.absences
-              ? FetchOneStudent?.absences?.filter((a) => a.status === "late")
-                  ?.length
-              : undefined
-          }
-        />
-
-        <Card
-          title="Total Alpha"
-          description="dari 7 hari"
-          color="red"
-          content={
-            FetchOneStudent?.absences
-              ? FetchOneStudent?.absences?.filter(
-                  (a) => a.status === "unexcused",
-                )?.length
-              : undefined
-          }
-        />
+        {/* Tugas Terlewat */}
+        <div className="bg-white rounded-xl shadow p-4">
+          <div className="flex justify-between">
+            <h2 className="font-semibold">Alpha</h2>
+            <span className="text-red-500">●</span>
+          </div>
+          <p className="text-3xl font-bold mt-2">{tugasTerlambat}</p>
+          <p className="text-sm text-gray-400"></p>
+        </div>
       </div>
 
       {/* AKSI CEPAT */}
@@ -107,7 +77,7 @@ export default function Dashboard() {
       </div>
 
       {/* CONTOH LIST DATA DARI DUMMY */}
-      <div className="mt-6 bg-white rounded-xl shadow p-4 w-full">
+      {/* <div className="mt-6 bg-white rounded-xl shadow p-4">
         <h2 className="font-semibold mb-3">Data Siswa (Contoh)</h2>
 
         <div className="grid md:grid-cols-2 gap-3">
@@ -129,7 +99,7 @@ export default function Dashboard() {
             </div>
           ))} */}
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }
