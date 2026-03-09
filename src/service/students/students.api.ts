@@ -1,14 +1,36 @@
 "use server";
 
-import { ApiClient } from "@/lib/helpers/base.api";
 import { ShowOneStudentRes } from "./students.type";
 
-export async function ShowOneStudentAPI(
-  id: string,
-): Promise<ShowOneStudentRes> {
-  const res: ShowOneStudentRes = await ApiClient(
-    "GET",
-    `/api/student/get-one/${id}`,
+export async function ShowMeAPI(id: string) {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/api/student/get-one/${id}`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "ngrok-skip-browser-warning": "true",
+      },
+    },
   );
-  return res;
+
+  const data: ShowOneStudentRes = await res.json();
+  return data;
+}
+
+export async function ShowOneStudentAPI(id: string) {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/api/student/get-one/${id}`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "ngrok-skip-browser-warning": "true",
+      },
+    },
+  );
+
+  const data: ShowOneStudentRes = await res.json();
+
+  return data;
 }

@@ -1,6 +1,5 @@
 "use server";
 
-import { setCookie } from "@/lib/helpers/cookies";
 import { ShowMeRes } from "./user.type";
 
 export async function ShowMeAPI() {
@@ -16,5 +15,5 @@ export async function ShowMeAPI() {
 
   if (data.success) return data;
 
-  return { success: false, message: data.message };
+  return { success: false, message: data.message, data: data.data };
 }

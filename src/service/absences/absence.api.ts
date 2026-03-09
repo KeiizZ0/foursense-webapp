@@ -1,32 +1,54 @@
 "use client";
 
-import { ApiClient } from "@/lib/helpers/base.api";
 import { ShowMyAbsencesRes, ShowOneAbsencesRes } from "./absence.type";
 
-export async function ShowMyAbsenceAPI(): Promise<ShowMyAbsencesRes> {
-  const res: ShowMyAbsencesRes = await ApiClient(
-    "GET",
-    "/api/absen/me/attendance-summary",
+export async function ShowMyAbsenceAPI() {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/api/absen/me/getWeeklyTotal`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "ngrok-skip-browser-warning": "true",
+      },
+    },
   );
-  return res;
+
+  const data: ShowMyAbsencesRes = await res.json();
+
+  return data
 }
 
-export async function ShowAllAbsenceAPI(
-  id: string,
-): Promise<ShowOneAbsencesRes> {
-  const res: ShowOneAbsencesRes = await ApiClient(
-    "GET",
-    `/api/absen/get-one/${id}`,
+export async function ShowAllAbsenceAPI() {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/api/absen/get-all`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "ngrok-skip-browser-warning": "true",
+      },
+    },
   );
-  return res;
+
+  const data: ShowOneAbsencesRes = await res.json();
+
+  return data
 }
 
-export async function ShowOneAbsenceAPI(
-  id: string,
-): Promise<ShowOneAbsencesRes> {
-  const res: ShowOneAbsencesRes = await ApiClient(
-    "GET",
-    `/api/absen/get-one/${id}`,
+export async function ShowOneAbsenceAPI(id: string) {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/api/absen/get-one/${id}`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "ngrok-skip-browser-warning": "true",
+      },
+    },
   );
-  return res;
+
+  const data: ShowOneAbsencesRes = await res.json();
+
+  return data
 }
