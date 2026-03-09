@@ -4,6 +4,13 @@ export type UserRes = {
   data: UserData;
 };
 
+export enum Role {
+  UNREGISTERED = "UNREGISTERED",
+  STUDENT = "STUDENT",
+  TEACHER = "TEACHER",
+  ADMIN = "ADMIN",
+}
+
 export type UserData = {
   id: string;
   name: string;

@@ -1,26 +1,34 @@
+
 import { FileCheckCorner, Home, User, Users } from "lucide-react";
 
-export const sidebarList = (name: string, role: string) => {
+enum Role {
+  UNREGISTERED = "UNREGISTERED",
+  STUDENT = "STUDENT",
+  TEACHER = "TEACHER",
+  ADMIN = "ADMIN",
+}
 
+export const sidebarList = (slug: string, role: Role) => {
+  const roleList = role?.toLowerCase();
   const menu = [
     {
       Page: "Dashboard",
       Icon: <Home />,
-      link: `/${role}/dashboard`,
+      link: `/${roleList}/dashboard`,
     },
     {
       Page: "Absence",
       Icon: <FileCheckCorner />,
-      link: `/${role}/absence`,
+      link: `/${roleList}/absence`,
     },
     {
       Page: "Profile",
       Icon: <User />,
-      link: `/profile/${name}`,
+      link: `/profile/${slug}`,
     },
   ];
 
-  if (role === "teacher") {
+  if (role === "TEACHER") {
     menu.splice(2, 0, {
       Page: "Data Siswa",
       Icon: <Users />,

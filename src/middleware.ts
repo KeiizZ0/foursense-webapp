@@ -4,9 +4,9 @@ import { refresh } from "./lib/helpers/auth";
 
 const publicRoute = ["/", "/forgot-password"];
 const roleAccess: Record<string, string> = {
-  admin: "/admin",
-  teacher: "/teacher",
-  student: "/student",
+  ADMIN: "/admin",
+  TEACHER: "/teacher",
+  STUDENT: "/student",
 };
 const allowedSubPaths = ["dashboard", "absence", "DataSiswa"];
 
