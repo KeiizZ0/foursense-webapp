@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "./lib/helpers/jose";
-import { refresh } from "./lib/helpers/auth";
+import { RefreshToken } from "./service/auth/auth.api";
 
 const publicRoute = ["/", "/forgot-password"];
 const roleAccess: Record<string, string> = {
-  admin: "/admin",
-  teacher: "/teacher",
-  student: "/student",
+  ADMIN: "/admin",
+  TEACHER: "/teacher",
+  STUDENT: "/student",
 };
 const allowedSubPaths = ["dashboard", "absence", "DataSiswa"];
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const token = req.cookies.get("acctkn")?.value;
   const refresh_token = req.cookies.get("rftkn")?.value;
@@ -19,7 +19,7 @@ export async function middleware(req: NextRequest) {
 
   // 1. Logic Refresh Token (Jika access token mati tapi refresh token ada)
   if (!payload && refresh_token) {
-    const data = await refresh(refresh_token);
+    const data = await RefreshToken(refresh_token);
     if (data?.data?.accessToken) {
       payload = await verifyToken(data.data.accessToken);
     }

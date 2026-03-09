@@ -1,12 +1,11 @@
-// app/actions/auth.ts
 "use server";
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { getCookie, setCookie, deleteCookie } from "./cookies";
-import { AuthRes, LoginReq } from "@/type/auth.type";
+import { getCookie, setCookie } from "../../lib/helpers/cookies";
+import { AuthRes } from "./auth.type";
 
-export async function login(body: LoginReq) {
+export async function Login(body: { email: string; password: string }) {
   if (!body) {
     return { success: false, message: "Insert email and password!" };
   }
@@ -28,10 +27,10 @@ export async function login(body: LoginReq) {
     return { success: true, message: "" };
   }
 
-  return { success: false, message: "Invalid email or password!" };
+  return { success: false, message: data.message };
 }
 
-export async function refresh(refresh: string) {
+export async function RefreshToken(refresh: string) {
   const refresh_token = await getCookie("rftkn");
 
   if (!refresh_token)
@@ -53,7 +52,9 @@ export async function refresh(refresh: string) {
 
   if (data.success) {
     await setCookie("acctkn", data.data.accessToken);
-    await setCookie("rftkn", data.data.refreshToken);
+    await setCookie("rftkn", data.data.refreshToken, {
+      maxAge: 60 * 60 * 24 * 14,
+    });
     return {
       success: true,
       message: "Success refresh",
@@ -63,16 +64,13 @@ export async function refresh(refresh: string) {
       },
     };
   } else {
-    await logout();
+    await Logout();
   }
 }
 
-export async function logout() {
-  // Delete cookies
-  await deleteCookie("acctkn");
-  await deleteCookie("rftkn");
-  
-  // Redirect to home - the client side will handle localStorage clearing
+export async function Logout() {
+  const cookieStore = await cookies();
+  cookieStore.delete("acctkn");
+  cookieStore.delete("rftkn");
   redirect("/");
 }
-

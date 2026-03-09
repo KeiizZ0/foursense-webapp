@@ -1,25 +1,17 @@
 "use client";
 
-export default function Dashboard() {
-  const dummyDashboard = [
-    {
-      id: "0e99e2fd-1cf4-4a2b-a7b6-0eeff0ce33ed",
-      nama: "dimas",
-      status: "present",
-      has_todo: false,
-    },
-    {
-      id: "5cc58df7-7448-414c-a933-457635ac4860",
-      nama: "epul",
-      status: "present",
-      has_todo: true,
-    },
-  ];
+import { useStudentsStore } from "@/service/students/students.store";
+import { useUserStore } from "@/service/user/user.store";
+import { useEffect } from "react";
 
-  // contoh hitung statistik sederhana
-  const totalHadir = dummyDashboard.filter(d => d.status === "present").length;
-  const tugasAktif = dummyDashboard.filter(d => d.has_todo).length;
-  const tugasTerlambat = 1; // contoh dummy
+export default function Dashboard() {
+  const { MyData } = useUserStore();
+  const { ShowOneStudents, OneStudents } = useStudentsStore();
+  useEffect(() => {
+    if (MyData?.student && !OneStudents) {
+      ShowOneStudents(MyData?.student.id);
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
@@ -36,28 +28,28 @@ export default function Dashboard() {
             <h2 className="font-semibold">Total Hadir</h2>
             <span className="text-green-500">●</span>
           </div>
-          <p className="text-3xl font-bold mt-2">{totalHadir}</p>
-          <p className="text-sm text-gray-400"></p>
+          {/* <p className="text-3xl font-bold mt-2">{totalHadir}</p> */}
+          <p className="text-sm text-gray-400">dari 25 hari</p>
         </div>
 
         {/* Tugas Aktif */}
         <div className="bg-white rounded-xl shadow p-4">
           <div className="flex justify-between">
-            <h2 className="font-semibold">Sakit</h2>
+            <h2 className="font-semibold">Tugas Aktif</h2>
             <span className="text-blue-500">●</span>
           </div>
-          <p className="text-3xl font-bold mt-2">{tugasAktif}</p>
-          <p className="text-sm text-gray-400"></p>
+          {/* <p className="text-3xl font-bold mt-2">{tugasAktif}</p> */}
+          <p className="text-sm text-gray-400">menunggu diselesaikan</p>
         </div>
 
         {/* Tugas Terlewat */}
         <div className="bg-white rounded-xl shadow p-4">
           <div className="flex justify-between">
-            <h2 className="font-semibold">Alpha</h2>
+            <h2 className="font-semibold">Tugas Terlewat</h2>
             <span className="text-red-500">●</span>
           </div>
-          <p className="text-3xl font-bold mt-2">{tugasTerlambat}</p>
-          <p className="text-sm text-gray-400"></p>
+          {/* <p className="text-3xl font-bold mt-2">{tugasTerlambat}</p> */}
+          <p className="text-sm text-gray-400">segera selesaikan</p>
         </div>
       </div>
 
@@ -84,14 +76,14 @@ export default function Dashboard() {
       </div>
 
       {/* CONTOH LIST DATA DARI DUMMY */}
-      {/* <div className="mt-6 bg-white rounded-xl shadow p-4">
+      <div className="mt-6 bg-white rounded-xl shadow p-4">
         <h2 className="font-semibold mb-3">Data Siswa (Contoh)</h2>
 
-        <div className="grid md:grid-cols-2 gap-3">
+        {/* <div className="grid md:grid-cols-2 gap-3">
           {dummyDashboard.map((a) => (
             <div
               key={a.id}
-              className="border rounded-lg p-3 flex justify-between"
+              className="border rounded-lg p-3 flex justify-between gap-2.5"
             >
               <div>
                 <p className="font-semibold capitalize">{a.nama}</p>
@@ -105,8 +97,8 @@ export default function Dashboard() {
               )}
             </div>
           ))}
-        </div>
-      </div> */}
+        </div> */}
+      </div>
     </div>
   );
 }
