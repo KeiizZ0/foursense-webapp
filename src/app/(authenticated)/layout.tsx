@@ -4,11 +4,11 @@
 
 import "../globals.css";
 import { Search, SquareChevronLeft, SquareChevronRight } from "lucide-react";
-import { useUserStorage } from "@/store/user.store";
 import { useEffect } from "react";
-import { logout } from "@/lib/helpers/auth";
 import { sidebarList } from "@/constant/sidebarList";
 import { usePathname, useRouter } from "next/navigation";
+import { useUserStore } from "@/service/user/user.store";
+import { Logout } from "@/service/auth/auth.api";
 
 export default function RootLayout({
   children,
@@ -17,10 +17,10 @@ export default function RootLayout({
 }>) {
   const route = useRouter();
   const pathname = usePathname();
-  const { myData, showMe } = useUserStorage();
+  const { MyData, ShowMe } = useUserStore();
 
   useEffect(() => {
-    showMe();
+    ShowMe();
   }, []);
 
   return (
@@ -40,7 +40,7 @@ export default function RootLayout({
             {/* Profile di Navbar */}
             <div className="dropdown dropdown-bottom dropdown-end">
               <div tabIndex={0} role="button" className="btn m-1 rounded-full">
-                {myData?.name.charAt(0)}
+                {MyData?.name.charAt(0)}
               </div>
               <ul
                 tabIndex={-1}
@@ -48,11 +48,11 @@ export default function RootLayout({
               >
                 <div className="flex font-medium gap-2.5 mb-2.5">
                   <div className="flex items-center justify-center bg-base-300 rounded-full w-10 h-10">
-                    {myData?.name.charAt(0)}
+                    {MyData?.name.charAt(0)}
                   </div>
                   <div className="flex flex-col">
-                    <p>{myData?.name}</p>
-                    <p>{myData?.role}</p>
+                    <p>{MyData?.name}</p>
+                    <p>{MyData?.role}</p>
                   </div>
                 </div>
                 <li>
@@ -64,7 +64,7 @@ export default function RootLayout({
                 <li>
                   <a
                     onClick={async () => {
-                      await logout();
+                      await Logout();
                     }}
                   >
                     Logout
@@ -101,7 +101,7 @@ export default function RootLayout({
               </label>
             </li>
             {/* List item */}
-            {sidebarList(myData?.name!, myData?.role!).map((a, i) => (
+            {sidebarList(MyData?.name!, MyData?.role!).map((a, i) => (
               <li key={i + 1}>
                 <button
                   className={`

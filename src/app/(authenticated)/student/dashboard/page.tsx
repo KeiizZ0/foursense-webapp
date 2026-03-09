@@ -1,16 +1,15 @@
 "use client";
 
-import { Card } from "@/components/ui/card";
-import { useStudentStorage } from "@/store/student.store";
-import { useUserStorage } from "@/store/user.store";
+import { useStudentsStore } from "@/service/students/students.store";
+import { useUserStore } from "@/service/user/user.store";
 import { useEffect } from "react";
 
 export default function Dashboard() {
-  const { myData } = useUserStorage();
-  const { FetchOneStudent, getOne } = useStudentStorage();
+  const { MyData } = useUserStore();
+  const { ShowOneStudents, OneStudents } = useStudentsStore();
   useEffect(() => {
-    if (myData?.student && !FetchOneStudent) {
-      getOne(myData?.student.id);
+    if (MyData?.student && !OneStudents) {
+      ShowOneStudents(MyData?.student.id);
     }
   }, []);
 
