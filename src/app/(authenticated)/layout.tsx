@@ -101,7 +101,7 @@ export default function RootLayout({
               </label>
             </li>
             {/* List item */}
-            {sidebarList(MyData?.name!, MyData?.role!).map((a, i) => (
+            {sidebarList(MyData?.slug!, MyData?.role!).map((a, i) => (
               <li key={i + 1}>
                 <button
                   className={`

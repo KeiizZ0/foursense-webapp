@@ -4,7 +4,7 @@ import type { JWTPayload } from "jose";
 
 interface AuthPayload extends JWTPayload {
   sub: string;
-  role: "ADMIN" | "TEACHER" | "STUDENT" | "UNREGISTERED";
+  role: "admin" | "teacher" | "student" | "unregistered";
 }
 
 const secret = new TextEncoder().encode(process.env.ACCESS_SECRET);

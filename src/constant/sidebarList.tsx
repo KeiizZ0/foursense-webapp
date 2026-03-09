@@ -1,23 +1,23 @@
-
 import { Role } from "@/service/user/user.type";
 import { FileCheckCorner, Home, User, Users } from "lucide-react";
 
-export const sidebarList = (name: string, role: Role) => {
+export const sidebarList = (slug: string, role: Role) => {
+  const roleList = role?.toLowerCase();
   const menu = [
     {
       Page: "Dashboard",
       Icon: <Home />,
-      link: `/${role}/dashboard`,
+      link: `/${roleList}/dashboard`,
     },
     {
       Page: "Absence",
       Icon: <FileCheckCorner />,
-      link: `/${role}/absence`,
+      link: `/${roleList}/absence`,
     },
     {
       Page: "Profile",
       Icon: <User />,
-      link: `/profile/${name}`,
+      link: `/profile/${slug}`,
     },
   ];
 
