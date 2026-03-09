@@ -3,7 +3,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getCookie, setCookie } from "../../lib/helpers/cookies";
-import { AuthRes, LoginReq } from "./auth.type";
+import { AuthRes } from "./auth.type";
 
 export async function Login(body: { email: string; password: string }) {
   if (!body) {

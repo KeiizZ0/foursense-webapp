@@ -30,7 +30,7 @@ export default function Home() {
   return (
     <div className="bg-base-100 overflow-x-hidden p-3 grid 2lg:flex 2lg:w-screen 2lg:h-screen 2lg:p-1">
       <img
-        src="/smkn4bandungpreview.webp"
+        src="/smkn4bandung.webp"
         alt="Vercel logomark"
         className="max-sm:h-30 max-lg:h-75 max-lg:w-full max-lg:rounded-2xl object-cover w-1/2"
       />

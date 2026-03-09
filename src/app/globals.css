@@ -8,3 +8,7 @@
 @theme {
   --font-inter: "Inter", sans-serif;
 }
+
+@theme {
+  --breakpoint-2lg: 1100px;
+}
