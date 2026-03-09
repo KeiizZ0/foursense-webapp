@@ -1,4 +1,5 @@
-import { Role } from "@/type/user.type";
+
+import { Role } from "@/service/user/user.type";
 import { FileCheckCorner, Home, User, Users } from "lucide-react";
 
 export const sidebarList = (name: string, role: Role) => {
@@ -20,7 +21,7 @@ export const sidebarList = (name: string, role: Role) => {
     },
   ];
 
-  if (role === "teacher") {
+  if (role === "TEACHER") {
     menu.splice(2, 0, {
       Page: "Data Siswa",
       Icon: <Users />,

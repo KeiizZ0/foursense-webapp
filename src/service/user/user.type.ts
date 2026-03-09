@@ -9,9 +9,11 @@ export type ShowMeRes = {
 export type ShowMeData = {
   id: string;
   name: string;
-  email: string;
   role: Role;
+  email: string;
+  slug: string;
   student: ShowMeStudentData;
+  nis: string;
 };
 
 export type ShowMeStudentData = {
@@ -26,8 +28,8 @@ export type ShowMeClassData = {
 };
 
 export enum Role {
-  UNREGISTERED,
-  STUDENT,
-  TEACHER,
-  ADMIN,
+  UNREGISTERED = "UNREGISTERED",
+  STUDENT = "STUDENT",
+  TEACHER = "TEACHER",
+  ADMIN = "ADMIN",
 }

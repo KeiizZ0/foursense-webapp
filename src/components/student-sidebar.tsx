@@ -1,38 +1,35 @@
-'use client'
+"use client";
 
-import { useAuth } from '@/app/hooks/use-auth'
-import { useRouter, usePathname } from 'next/navigation'
-import { LogOut, BarChart3, User, BookOpen, Menu, X } from 'lucide-react'
-import Link from 'next/link'
-import { useState } from 'react'
-import { useUserStorage } from '@/store/user.store'
-import { clientLogout } from '@/lib/helpers/client-auth'
+import { useAuth } from "@/app/hooks/use-auth";
+import { useRouter, usePathname } from "next/navigation";
+import { LogOut, BarChart3, User, BookOpen, Menu, X } from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
+
+import { clientLogout } from "@/lib/helpers/client-auth";
 
 export function StudentSidebar() {
-  const { user, logout } = useAuth()
-  const { reset } = useUserStorage()
-  const router = useRouter()
-  const pathname = usePathname()
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const { user, logout } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const menuItems = [
-    { label: 'Dashboard', href: '/student/dashboard', icon: BarChart3 },
-    { label: 'Tugas & Absensi', href: '/student/work', icon: BookOpen },
-  ]
+    { label: "Dashboard", href: "/student/dashboard", icon: BarChart3 },
+    { label: "Tugas & Absensi", href: "/student/work", icon: BookOpen },
+  ];
 
   const handleLogout = () => {
     // Clear localStorage
-    clientLogout()
+    clientLogout();
     // Reset zustand store
-    reset()
-    // Call logout from useAuth which clears localStorage and redirects
-    logout()
-    router.push('/')
-  }
+    logout();
+    router.push("/");
+  };
 
   const handleMenuItemClick = () => {
-    setMobileMenuOpen(false)
-  }
+    setMobileMenuOpen(false);
+  };
 
   return (
     <>
@@ -64,22 +61,20 @@ export function StudentSidebar() {
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-2">
           {menuItems.map((item) => {
-            const Icon = item.icon
-            const isActive = pathname === item.href
+            const Icon = item.icon;
+            const isActive = pathname === item.href;
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                  isActive
-                    ? 'bg-blue-600 font-semibold'
-                    : 'hover:bg-slate-700'
+                  isActive ? "bg-blue-600 font-semibold" : "hover:bg-slate-700"
                 }`}
               >
                 <Icon className="h-5 w-5" />
                 <span>{item.label}</span>
               </Link>
-            )
+            );
           })}
         </nav>
 
@@ -89,8 +84,8 @@ export function StudentSidebar() {
             href={`/profile/${user?.name}`}
             className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-all ${
               pathname === `/profile/${user?.name}`
-                ? 'bg-blue-600 font-semibold'
-                : 'hover:bg-slate-700'
+                ? "bg-blue-600 font-semibold"
+                : "hover:bg-slate-700"
             }`}
           >
             <User className="h-5 w-5" />
@@ -111,8 +106,8 @@ export function StudentSidebar() {
         <div className="lg:hidden fixed inset-0 top-14 bg-slate-800 text-white z-40 overflow-y-auto">
           <nav className="p-4 space-y-2">
             {menuItems.map((item) => {
-              const Icon = item.icon
-              const isActive = pathname === item.href
+              const Icon = item.icon;
+              const isActive = pathname === item.href;
               return (
                 <Link
                   key={item.href}
@@ -120,14 +115,14 @@ export function StudentSidebar() {
                   onClick={handleMenuItemClick}
                   className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                     isActive
-                      ? 'bg-blue-600 font-semibold'
-                      : 'hover:bg-slate-700'
+                      ? "bg-blue-600 font-semibold"
+                      : "hover:bg-slate-700"
                   }`}
                 >
                   <Icon className="h-5 w-5" />
                   <span>{item.label}</span>
                 </Link>
-              )
+              );
             })}
           </nav>
 
@@ -137,8 +132,8 @@ export function StudentSidebar() {
               onClick={handleMenuItemClick}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                 pathname === `/profile/${user?.name}`
-                  ? 'bg-blue-600 font-semibold'
-                  : 'hover:bg-slate-700'
+                  ? "bg-blue-600 font-semibold"
+                  : "hover:bg-slate-700"
               }`}
             >
               <User className="h-5 w-5" />
@@ -146,8 +141,8 @@ export function StudentSidebar() {
             </Link>
             <button
               onClick={() => {
-                handleLogout()
-                handleMenuItemClick()
+                handleLogout();
+                handleMenuItemClick();
               }}
               className="px-4 py-2 rounded-lg text-sm font-medium w-full flex items-center justify-start gap-2 bg-red-600 text-white hover:bg-red-700 transition-colors"
             >
@@ -158,5 +153,5 @@ export function StudentSidebar() {
         </div>
       )}
     </>
-  )
+  );
 }

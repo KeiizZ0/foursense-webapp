@@ -49,13 +49,13 @@ export default function StudentProfilePage() {
         <Card className="border-0 shadow-lg bg-linear-to-r from-blue-50 to-indigo-50">
           <CardContent className="pt-4 sm:pt-6 md:pt-8 pb-4 sm:pb-6 md:pb-8 px-3 sm:px-6">
             <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 md:gap-6">
-              <div className="w-12 h-12 sm:w-16 md:w-20 md:h-20 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+              <div className="w-12 h-12 sm:w-16 md:w-20 md:h-20 rounded-full bg-primary flex items-center justify-center shrink-0">
                 <User className="h-6 w-6 sm:h-8 md:h-10 text-white" />
               </div>
               <div className="flex-1 text-center sm:text-left min-w-0">
                 <h2 className="text-base sm:text-xl md:text-2xl font-bold text-slate-900 wrap-break-word">{MyData.name}</h2>
                 <p className="text-blue-600 font-medium text-xs sm:text-sm md:text-base">Siswa</p>
-                <p className="text-slate-600 text-xs md:text-sm mt-1">{MyData.student. && MyData.nis !== 'undefined' ? MyData.nis : 'N/A'}</p>
+                <p className="text-slate-600 text-xs md:text-sm mt-1">{MyData.student && MyData.nis !== 'undefined' ? MyData.nis : 'N/A'}</p>
               </div>
             </div>
           </CardContent>
@@ -85,7 +85,7 @@ export default function StudentProfilePage() {
               </div>
               <div className="p-2 sm:p-3 md:p-4 bg-slate-50 rounded-lg">
                 <p className="text-xs text-slate-600 uppercase font-semibold">Kelas</p>
-                <p className="text-xs sm:text-sm md:text-lg font-medium mt-1">{MyData.kelas || 'N/A'}</p>
+                <p className="text-xs sm:text-sm md:text-lg font-medium mt-1">{MyData.student.class.classes && MyData.student.class.major || 'N/A'}</p>
               </div>
             </div>
           </CardContent>
@@ -123,7 +123,7 @@ export default function StudentProfilePage() {
         <Card>
           <CardHeader className="p-3 sm:p-4 md:p-6">
             <CardTitle className="flex items-center gap-2 text-sm sm:text-lg md:text-xl">
-              <Phone className="h-4 w-4 sm:h-5 text-blue-600 flex-shrink-0" />
+              <Phone className="h-4 w-4 sm:h-5 text-blue-600 shrink-0" />
               Informasi Kontak
             </CardTitle>
           </CardHeader>
