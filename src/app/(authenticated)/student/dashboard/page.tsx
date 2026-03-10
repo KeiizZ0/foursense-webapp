@@ -1,25 +1,70 @@
-"use client";
+import { getWeeklyAbsensi } from "@/restApi/dashboardSiswa.api";
+import { getMyTodos } from "@/restApi/todo.api";
+import Link from "next/link";
 
-export default function Dashboard() {
-  const dummyDashboard = [
-    {
-      id: "0e99e2fd-1cf4-4a2b-a7b6-0eeff0ce33ed",
-      nama: "dimas",
-      status: "present",
-      has_todo: false,
-    },
-    {
-      id: "5cc58df7-7448-414c-a933-457635ac4860",
-      nama: "epul",
-      status: "present",
-      has_todo: true,
-    },
-  ];
+interface AbsensiData {
+  _count: { status: number };
+  status: string;
+}
 
-  // contoh hitung statistik sederhana
-  const totalHadir = dummyDashboard.filter(d => d.status === "present").length;
-  const tugasAktif = dummyDashboard.filter(d => d.has_todo).length;
-  const tugasTerlambat = 1; // contoh dummy
+interface TodoData {
+  id: number;
+  title: string;
+  status: "Normal" | "Urgent";
+  date?: string;
+  done: boolean;
+}
+
+export default async function DashboardPage() {
+  let absensiData: AbsensiData[] = [];
+  let todos: TodoData[] = [];
+  
+  try {
+    const absensiResult = await getWeeklyAbsensi();
+    // Validasi dan normalisasi data absensi
+    let absensiArray: AbsensiData[] = [];
+    if (Array.isArray(absensiResult)) {
+      absensiArray = absensiResult;
+    } else if (absensiResult && typeof absensiResult === 'object') {
+      // Jika response berbentuk object dengan properti data/result
+      const data = (absensiResult as any).data || (absensiResult as any).result || [];
+      absensiArray = Array.isArray(data) ? data : [];
+    }
+    absensiData = absensiArray;
+  } catch (error) {
+    console.error("Error fetching absensi:", error);
+  }
+
+  try {
+    todos = await getMyTodos();
+  } catch (error) {
+    console.error("Error fetching todos:", error);
+  }
+
+  // Hitung statistik
+  const totalTugas = todos.length;
+  const tugasSelesai = todos.filter((t: TodoData) => t.done).length;
+  const tugasAktif = totalTugas - tugasSelesai;
+
+  // Hitung statistik absensi
+  const absensiStats = {
+    hadir: absensiData.find((a: AbsensiData) => a.status === "PRESENT")?._count?.status || 0,
+    terlambat: absensiData.find((a: AbsensiData) => a.status === "LATE")?._count?.status || 0,
+    sakit: absensiData.find((a: AbsensiData) => a.status === "SICK")?._count?.status || 0,
+    izin: absensiData.find((a: AbsensiData) => a.status === "PERMISSION")?._count?.status || 0,
+    alpha: absensiData.find((a: AbsensiData) => a.status === "ABSENT")?._count?.status || 0,
+  };
+
+  // Mapping 5 status yang mungkin
+  const statusMap: Record<string, string> = {
+    "PRESENT": "Hadir",
+    "LATE": "Terlambat",
+    "SICK": "Sakit",
+    "PERMISSION": "Izin",
+    "ABSENT": "Alpha"
+  };
+
+  const getStatusLabel = (status: string) => statusMap[status] || status;
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
@@ -28,85 +73,115 @@ export default function Dashboard() {
         Selamat datang! Kelola kehadiran dan todo list Anda di sini.
       </p>
 
-      {/* CARD STATISTIK */}
-      <div className="grid md:grid-cols-3 gap-4 mb-6">
-        {/* Total Hadir */}
+      {/* CARD STATISTIK ABSENSI */}
+      <div className="grid md:grid-cols-5 gap-4 mb-6">
         <div className="bg-white rounded-xl shadow p-4">
           <div className="flex justify-between">
-            <h2 className="font-semibold">Total Hadir</h2>
+            <h2 className="font-semibold">Hadir</h2>
             <span className="text-green-500">●</span>
           </div>
-          <p className="text-3xl font-bold mt-2">{totalHadir}</p>
-          <p className="text-sm text-gray-400"></p>
+          <p className="text-3xl font-bold mt-2">{absensiStats.hadir}</p>
+          <p className="text-sm text-gray-400">Total</p>
         </div>
 
-        {/* Tugas Aktif */}
+        <div className="bg-white rounded-xl shadow p-4">
+          <div className="flex justify-between">
+            <h2 className="font-semibold">Terlambat</h2>
+            <span className="text-yellow-500">●</span>
+          </div>
+          <p className="text-3xl font-bold mt-2">{absensiStats.terlambat}</p>
+          <p className="text-sm text-gray-400">Total</p>
+        </div>
+
         <div className="bg-white rounded-xl shadow p-4">
           <div className="flex justify-between">
             <h2 className="font-semibold">Sakit</h2>
             <span className="text-blue-500">●</span>
           </div>
-          <p className="text-3xl font-bold mt-2">{tugasAktif}</p>
-          <p className="text-sm text-gray-400"></p>
+          <p className="text-3xl font-bold mt-2">{absensiStats.sakit}</p>
+          <p className="text-sm text-gray-400">Total</p>
         </div>
 
-        {/* Tugas Terlewat */}
+        <div className="bg-white rounded-xl shadow p-4">
+          <div className="flex justify-between">
+            <h2 className="font-semibold">Izin</h2>
+            <span className="text-purple-500">●</span>
+          </div>
+          <p className="text-3xl font-bold mt-2">{absensiStats.izin}</p>
+          <p className="text-sm text-gray-400">Total</p>
+        </div>
+
         <div className="bg-white rounded-xl shadow p-4">
           <div className="flex justify-between">
             <h2 className="font-semibold">Alpha</h2>
             <span className="text-red-500">●</span>
           </div>
-          <p className="text-3xl font-bold mt-2">{tugasTerlambat}</p>
-          <p className="text-sm text-gray-400"></p>
+          <p className="text-3xl font-bold mt-2">{absensiStats.alpha}</p>
+          <p className="text-sm text-gray-400">Total</p>
         </div>
       </div>
 
       {/* AKSI CEPAT */}
-      <div className="bg-white rounded-xl shadow p-5">
+      <div className="bg-white rounded-xl shadow p-5 mb-6">
         <h2 className="font-semibold">Aksi Cepat</h2>
         <p className="text-gray-400 text-sm mb-4">
           Mulai dari sini untuk menyelesaikan requirements
         </p>
 
         <div className="flex gap-3">
-          <button className="bg-blue-600 text-white px-4 py-2 rounded-lg">
+          <Link href="/student/todo" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
             Lihat Todo List
-          </button>
-
-          <button className="border px-4 py-2 rounded-lg">
-            Absensi Hari Ini
-          </button>
-
-          <button className="border px-4 py-2 rounded-lg">
-            Riwayat Kehadiran
-          </button>
+          </Link>
         </div>
       </div>
 
-      {/* CONTOH LIST DATA DARI DUMMY */}
-      {/* <div className="mt-6 bg-white rounded-xl shadow p-4">
-        <h2 className="font-semibold mb-3">Data Siswa (Contoh)</h2>
-
-        <div className="grid md:grid-cols-2 gap-3">
-          {dummyDashboard.map((a) => (
-            <div
-              key={a.id}
-              className="border rounded-lg p-3 flex justify-between"
-            >
-              <div>
-                <p className="font-semibold capitalize">{a.nama}</p>
-                <p className="text-sm text-gray-500">{a.status}</p>
-              </div>
-
-              {a.has_todo ? (
-                <span className="text-red-500 text-sm">Punya tugas</span>
-              ) : (
-                <span className="text-green-500 text-sm">Aman</span>
-              )}
-            </div>
-          ))}
+      {/* TODO LIST */}
+      <div className="bg-white rounded-xl shadow p-4">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="font-semibold">Todo List Anda</h2>
+          <div className="text-sm text-gray-500">
+            {tugasSelesai} / {totalTugas} selesai
+          </div>
         </div>
-      </div> */}
+
+        {todos.length === 0 ? (
+          <p className="text-gray-400 text-center py-4">Belum ada tugas</p>
+        ) : (
+          <div className="grid md:grid-cols-2 gap-3">
+            {todos.slice(0, 6).map((todo: TodoData) => (
+              <div
+                key={todo.id}
+                className={`border rounded-lg p-3 flex justify-between items-center ${
+                  todo.done ? "bg-gray-50" : ""
+                }`}
+              >
+                <div>
+                  <p className={`font-semibold capitalize ${todo.done ? "line-through text-gray-400" : ""}`}>
+                    {todo.title}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    {todo.date}
+                  </p>
+                </div>
+
+                {todo.done ? (
+                  <span className="text-green-500 text-sm">Selesai</span>
+                ) : (
+                  <span className="text-red-500 text-sm">Pending</span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {todos.length > 6 && (
+          <div className="mt-4 text-center">
+            <Link href="/student/todo" className="text-blue-600 hover:underline text-sm">
+              Lihat semua {todos.length} tugas →
+            </Link>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

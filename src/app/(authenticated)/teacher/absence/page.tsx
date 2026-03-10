@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { 
+import { useState, useEffect } from 'react'
+import {
   Download, Filter, ChevronDown, Calendar, Users,
   CheckCircle, XCircle, AlertCircle, Clock, BookOpen 
 } from 'lucide-react'
@@ -81,11 +81,17 @@ const loadDummyData = () => {
   setAbsenceData(dummyAbsence);
 }
 
-// Panggil ketika kelas dipilih
+  // Panggil ketika kelas dipilih
 const handleSelectClass = (classId: string) => {
   setSelectedClass(classId)
-  loadDummyData()
 }
+
+// Panggil loadDummyData dengan useEffect
+useEffect(() => {
+  if (selectedClass) {
+    loadDummyData()
+  }
+}, [selectedClass])
 
 const handleStatusChange = (studentId: string, newStatus: string) => {
   setAbsenceData(prev => 
