@@ -14,6 +14,9 @@ export const ApiClient: AxiosInstance = axios.create({
   timeout: 10000,
   baseURL: baseURL,
   withCredentials: true,
+  headers: {
+    "ngrok-skip-browser-warning": "true", // ← tambah ini
+  },
 });
 
 ApiClient.interceptors.request.use(

@@ -1,7 +1,7 @@
 "use client";
 
 type Task = {
-  id: number;
+  id: string;
   title: string;
   status: "Urgent" | "Normal";
   date?: string;
@@ -14,17 +14,13 @@ type AbsenceRecord = {
 };
 
 import { useState, useEffect } from "react";
-import { createTodo } from "@/restApi/todo.api";
+import { createTodo, getMyTodos } from "@/restApi/todo.api";
 import { checkIn } from "@/restApi/absence.api";
 
 export default function AbsencePage() {
   const [activeTab, setActiveTab] = useState<"tasks" | "absence">("tasks");
-  const [tasks, setTasks] = useState<Task[]>([
-    { id: 1, title: "Kerjakan Matematika Halaman 10–15", status: "Urgent", date: "20 Nov" },
-    { id: 2, title: "Tugas Sains: Laporan Eksperimen", status: "Urgent", date: "22 Nov" },
-    { id: 3, title: "Bahasa Inggris: Essay Writing", status: "Normal", date: "21 Nov" },
-    { id: 4, title: "Baca Bab 5 Sejarah", status: "Normal", done: true },
-  ]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [isLoadingTasks, setIsLoadingTasks] = useState(true);
 
   const [absenceHistory, setAbsenceHistory] = useState<AbsenceRecord[]>([
     { date: "18/11/2025", status: "Hadir" },
@@ -54,7 +50,6 @@ export default function AbsencePage() {
   });
 
   const todayISO = new Date().toISOString().split("T")[0];
-
   const sudahAbsenHariIni = absenceHistory.some((a) => a.date === today);
 
   function getStatusAbsen(): "Hadir" | "Terlambat" | "Alfa" {
@@ -69,6 +64,24 @@ export default function AbsencePage() {
   const sudahLewatBatas = statusAbsenSekarang === "Alfa";
   const absenDisabled = tasks.length === 0 || sudahAbsenHariIni || sudahLewatBatas;
 
+  // ── Fetch todos dari API ──
+  async function fetchTodos() {
+    setIsLoadingTasks(true);
+    try {
+      const data = await getMyTodos();
+      setTasks(data);
+    } catch (err) {
+      console.error("Gagal fetch tasks:", err);
+    } finally {
+      setIsLoadingTasks(false);
+    }
+  }
+
+  useEffect(() => {
+    fetchTodos();
+  }, []);
+
+  // ── Auto-tandai Alfa jika sudah lewat batas ──
   useEffect(() => {
     if (sudahLewatBatas && !sudahAbsenHariIni) {
       setAbsenceHistory((prev) => {
@@ -79,9 +92,9 @@ export default function AbsencePage() {
     }
   }, []);
 
-  function handleToggle(id: number) {
+  function handleToggle(id: string) {
     setTasks((prev) =>
-      prev.map((t) => t.id === id ? { ...t, done: !t.done } : t)
+      prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t))
     );
   }
 
@@ -93,20 +106,12 @@ export default function AbsencePage() {
     setIsLoading(true);
     setError("");
     try {
-      const data = await createTodo({
-        title: newTitle,
-        status: newStatus,
-        date: newDate || undefined,
-        done: false,
-      });
-      const newTask: Task = {
-        id: data.id ?? Date.now(),
-        title: newTitle,
-        status: newStatus,
-        date: newDate || undefined,
-        done: false,
-      };
-      setTasks((prev) => [newTask, ...prev]);
+      await createTodo(newTitle);
+
+      // ← fetch ulang dari API biar sinkron dengan DB
+      const data = await getMyTodos();
+      setTasks(data);
+
       setNewTitle("");
       setNewStatus("Normal");
       setNewDate("");
@@ -160,7 +165,11 @@ export default function AbsencePage() {
         />
         <StatCard
           title="Progress"
-          value={tasks.length > 0 ? `${Math.round((completed.length / tasks.length) * 100)}%` : "0%"}
+          value={
+            tasks.length > 0
+              ? `${Math.round((completed.length / tasks.length) * 100)}%`
+              : "0%"
+          }
           color="purple"
         />
       </div>
@@ -269,11 +278,9 @@ export default function AbsencePage() {
             }`}>
               Status: {statusAbsenSekarang}
             </div>
-
             {absenError && (
               <p className="text-red-500 text-sm mb-4 bg-red-50 p-2 rounded">{absenError}</p>
             )}
-
             <div className="flex gap-3">
               <button
                 onClick={() => { setShowAbsenModal(false); setAbsenError(""); }}
@@ -295,27 +302,36 @@ export default function AbsencePage() {
         </div>
       )}
 
-      {/* Tab: Tugas */}
+      {/* ── Tab: Tugas ── */}
       {activeTab === "tasks" && (
         <>
-          <h2 className="font-semibold mb-3">Tugas Tertunda</h2>
-          {pending.length === 0 && (
-            <p className="text-gray-400 text-sm mb-4">Tidak ada tugas tertunda.</p>
+          {isLoadingTasks ? (
+            <div className="text-center py-10 text-gray-400">
+              <p className="text-2xl mb-2">⏳</p>
+              <p className="text-sm">Memuat tugas...</p>
+            </div>
+          ) : (
+            <>
+              <h2 className="font-semibold mb-3">Tugas Tertunda</h2>
+              {pending.length === 0 && (
+                <p className="text-gray-400 text-sm mb-4">Tidak ada tugas tertunda.</p>
+              )}
+              {pending.map((task) => (
+                <TaskItem key={task.id} task={task} onToggle={handleToggle} />
+              ))}
+              <h2 className="font-semibold mt-6 mb-3">Tugas Selesai</h2>
+              {completed.length === 0 && (
+                <p className="text-gray-400 text-sm">Belum ada tugas selesai.</p>
+              )}
+              {completed.map((task) => (
+                <TaskItem key={task.id} task={task} onToggle={handleToggle} />
+              ))}
+            </>
           )}
-          {pending.map((task) => (
-            <TaskItem key={task.id} task={task} onToggle={handleToggle} />
-          ))}
-          <h2 className="font-semibold mt-6 mb-3">Tugas Selesai</h2>
-          {completed.length === 0 && (
-            <p className="text-gray-400 text-sm">Belum ada tugas selesai.</p>
-          )}
-          {completed.map((task) => (
-            <TaskItem key={task.id} task={task} onToggle={handleToggle} />
-          ))}
         </>
       )}
 
-      {/* Tab: Absensi */}
+      {/* ── Tab: Absensi ── */}
       {activeTab === "absence" && (
         <div className="space-y-6">
           <div className="border rounded-xl p-6 bg-blue-50">
@@ -427,14 +443,18 @@ function StatCard({ title, value, color = "blue" }: { title: string; value: stri
   );
 }
 
-function TaskItem({ task, onToggle }: { task: Task; onToggle: (id: number) => void }) {
+function TaskItem({ task, onToggle }: { task: Task; onToggle: (id: string) => void }) {
   return (
-    <div className={`border rounded-xl p-4 mb-4 flex justify-between items-center ${task.done ? "border-green-400" : "border-blue-500"}`}>
+    <div className={`border rounded-xl p-4 mb-4 flex justify-between items-center ${
+      task.done ? "border-green-400" : "border-blue-500"
+    }`}>
       <div>
         <p className={`${task.done ? "line-through text-gray-400" : ""}`}>{task.title}</p>
         {!task.done && (
           <>
-            <span className={`text-xs px-2 py-1 rounded mr-2 ${task.status === "Urgent" ? "bg-red-100 text-red-500" : "bg-yellow-100 text-yellow-600"}`}>
+            <span className={`text-xs px-2 py-1 rounded mr-2 ${
+              task.status === "Urgent" ? "bg-red-100 text-red-500" : "bg-yellow-100 text-yellow-600"
+            }`}>
               {task.status}
             </span>
             <span className="text-xs text-gray-400">{task.date}</span>
