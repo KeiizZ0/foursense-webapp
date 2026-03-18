@@ -129,9 +129,15 @@ export default async function DashboardPage() {
         </p>
 
         <div className="flex gap-3">
-          <Link href="/student/todo" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+          <Link href="/student/absence" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
             Lihat Todo List
           </Link>
+
+          <div className="flex gap-3">
+          <Link href="/student/absence?tab=absence" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+            Kehadiran Hari Ini 
+          </Link>
+        </div>
         </div>
       </div>
 
