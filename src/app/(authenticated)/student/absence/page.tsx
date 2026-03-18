@@ -19,8 +19,10 @@ import { createTodo, getMyTodos, markAsDone, deleteTodo, updateTodo } from "@/re
 import { checkIn } from "@/restApi/absence.api";
 import { useUserStorage } from "@/store/user.store";
 import { ApiClient } from "@/lib/helpers/axios";
+import { useSearchParams } from "next/navigation"; // IMPORT INI DITAMBAH
 
 export default function AbsencePage() {
+  const searchParams = useSearchParams(); // HOOK INI DITAMBAH
   const { myData } = useUserStorage();
   const [activeTab, setActiveTab] = useState<"tasks" | "absence">("tasks");
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -84,6 +86,31 @@ export default function AbsencePage() {
   const statusAbsenSekarang = getStatusAbsen();
   const sudahLewatBatas = statusAbsenSekarang === "Alpa";
   const absenDisabled = tasks.length === 0 || sudahAbsenHariIni || sudahLewatBatas;
+
+  // EFEK UNTUK BACA PARAMETER DARI URL - INI YANG DITAMBAH
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    const openModal = searchParams.get('openModal');
+    
+    if (tab === 'absence') {
+      setActiveTab('absence');
+      
+      // Scroll ke section absensi
+      setTimeout(() => {
+        const absenSection = document.getElementById('absen-section');
+        if (absenSection) {
+          absenSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 300);
+
+      // Langsung buka modal absen kalau ada parameter openModal
+      if (openModal === 'true' && !sudahAbsenHariIni && !sudahLewatBatas && tasks.length > 0) {
+        setTimeout(() => {
+          setShowAbsenModal(true);
+        }, 500);
+      }
+    }
+  }, [searchParams, sudahAbsenHariIni, sudahLewatBatas, tasks.length]);
 
   async function fetchTodos() {
     setIsLoadingTasks(true);
@@ -373,9 +400,9 @@ export default function AbsencePage() {
         </>
       )}
 
-      {/* Tab Absensi */}
+      {/* Tab Absensi - SUDAH DITAMBAH ID */}
       {activeTab === "absence" && (
-        <div className="space-y-4 lg:space-y-6">
+        <div id="absen-section" className="space-y-4 lg:space-y-6">
           <div className="border rounded-xl p-4 lg:p-6 bg-blue-50">
             <h3 className="font-semibold text-sm lg:text-base">Absen Hari Ini</h3>
             <p className="text-sm text-gray-500 mb-4">
