@@ -73,53 +73,58 @@ export default async function DashboardPage() {
         Selamat datang! Kelola kehadiran dan todo list Anda di sini.
       </p>
 
-      {/* CARD STATISTIK ABSENSI */}
-      <div className="grid md:grid-cols-5 gap-4 mb-6">
-        <div className="bg-white rounded-xl shadow p-4">
-          <div className="flex justify-between">
-            <h2 className="font-semibold">Hadir</h2>
-            <span className="text-green-500">●</span>
-          </div>
-          <p className="text-3xl font-bold mt-2">{absensiStats.hadir}</p>
-          <p className="text-sm text-gray-400">Total</p>
-        </div>
+{/* CARD STATISTIK ABSENSI - 2 PER BARIS DI MOBILE, 5 PER BARIS DI DESKTOP */}
+<div className="grid grid-cols-2 md:grid-cols-5 gap-3 lg:gap-4 mb-6">
+  {/* Hadir */}
+  <div className="bg-white rounded-xl shadow p-3 lg:p-4">
+    <div className="flex justify-between items-center">
+      <h2 className="font-semibold text-sm lg:text-base">Hadir</h2>
+      <span className="text-green-500 text-lg">●</span>
+    </div>
+    <p className="text-2xl lg:text-3xl font-bold mt-1">{absensiStats.hadir}</p>
+    <p className="text-xs text-gray-400">Total</p>
+  </div>
 
-        <div className="bg-white rounded-xl shadow p-4">
-          <div className="flex justify-between">
-            <h2 className="font-semibold">Terlambat</h2>
-            <span className="text-yellow-500">●</span>
-          </div>
-          <p className="text-3xl font-bold mt-2">{absensiStats.terlambat}</p>
-          <p className="text-sm text-gray-400">Total</p>
-        </div>
+  {/* Terlambat */}
+  <div className="bg-white rounded-xl shadow p-3 lg:p-4">
+    <div className="flex justify-between items-center">
+      <h2 className="font-semibold text-sm lg:text-base">Terlambat</h2>
+      <span className="text-yellow-500 text-lg">●</span>
+    </div>
+    <p className="text-2xl lg:text-3xl font-bold mt-1">{absensiStats.terlambat}</p>
+    <p className="text-xs text-gray-400">Total</p>
+  </div>
 
-        <div className="bg-white rounded-xl shadow p-4">
-          <div className="flex justify-between">
-            <h2 className="font-semibold">Sakit</h2>
-            <span className="text-blue-500">●</span>
-          </div>
-          <p className="text-3xl font-bold mt-2">{absensiStats.sakit}</p>
-          <p className="text-sm text-gray-400">Total</p>
-        </div>
+  {/* Sakit */}
+  <div className="bg-white rounded-xl shadow p-3 lg:p-4">
+    <div className="flex justify-between items-center">
+      <h2 className="font-semibold text-sm lg:text-base">Sakit</h2>
+      <span className="text-blue-500 text-lg">●</span>
+    </div>
+    <p className="text-2xl lg:text-3xl font-bold mt-1">{absensiStats.sakit}</p>
+    <p className="text-xs text-gray-400">Total</p>
+  </div>
 
-        <div className="bg-white rounded-xl shadow p-4">
-          <div className="flex justify-between">
-            <h2 className="font-semibold">Izin</h2>
-            <span className="text-purple-500">●</span>
-          </div>
-          <p className="text-3xl font-bold mt-2">{absensiStats.izin}</p>
-          <p className="text-sm text-gray-400">Total</p>
-        </div>
+  {/* Izin */}
+  <div className="bg-white rounded-xl shadow p-3 lg:p-4">
+    <div className="flex justify-between items-center">
+      <h2 className="font-semibold text-sm lg:text-base">Izin</h2>
+      <span className="text-purple-500 text-lg">●</span>
+    </div>
+    <p className="text-2xl lg:text-3xl font-bold mt-1">{absensiStats.izin}</p>
+    <p className="text-xs text-gray-400">Total</p>
+  </div>
 
-        <div className="bg-white rounded-xl shadow p-4">
-          <div className="flex justify-between">
-            <h2 className="font-semibold">Alpha</h2>
-            <span className="text-red-500">●</span>
-          </div>
-          <p className="text-3xl font-bold mt-2">{absensiStats.alpha}</p>
-          <p className="text-sm text-gray-400">Total</p>
-        </div>
-      </div>
+  {/* Alpha */}
+  <div className="bg-white rounded-xl shadow p-3 lg:p-4">
+    <div className="flex justify-between items-center">
+      <h2 className="font-semibold text-sm lg:text-base">Alpha</h2>
+      <span className="text-red-500 text-lg">●</span>
+    </div>
+    <p className="text-2xl lg:text-3xl font-bold mt-1">{absensiStats.alpha}</p>
+    <p className="text-xs text-gray-400">Total</p>
+  </div>
+</div>
 
       {/* AKSI CEPAT */}
       <div className="bg-white rounded-xl shadow p-5 mb-6">
@@ -135,8 +140,9 @@ export default async function DashboardPage() {
 
           <div className="flex gap-3">
           <Link href="/student/absence?tab=absence" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-            Kehadiran Hari Ini 
+            Absensi 
           </Link>
+          
         </div>
         </div>
       </div>
