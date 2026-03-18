@@ -43,7 +43,7 @@ export default function RootLayout({
       />
       
       <div className="drawer-content">
-        {/* Navbar - SEKARANG ADA BURGER BUTTONNYA! */}
+        {/* Navbar - */}
         <nav className="navbar w-full bg-base-300 flex justify-between">
           <div className="flex items-center gap-2">
             {/* BURGER BUTTON - MUNCUL CUMA DI MOBILE */}
@@ -153,7 +153,7 @@ export default function RootLayout({
                       p-3 rounded-lg transition-all duration-200 w-full
                       lg:is-drawer-close:tooltip lg:is-drawer-close:tooltip-right
                       hover:bg-primary hover:text-primary-foreground hover:shadow-md
-                      ${isActive ? "bg-primary text-primary-foreground" : ""}
+                      ${isActive ? "bg-primary/10 text-primary-foreground" : ""}
                     `}
                     data-tip={a.Page}
                     onClick={() => {
