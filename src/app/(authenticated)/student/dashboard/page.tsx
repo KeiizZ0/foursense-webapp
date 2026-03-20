@@ -73,61 +73,61 @@ export default async function DashboardPage() {
         Selamat datang! Kelola kehadiran dan todo list Anda di sini.
       </p>
 
-{/* CARD STATISTIK ABSENSI - 2 PER BARIS DI MOBILE, 5 PER BARIS DI DESKTOP */}
-<div className="grid grid-cols-2 md:grid-cols-5 gap-3 lg:gap-4 mb-6">
-  {/* Hadir */}
-  <div className="bg-white rounded-xl shadow p-3 lg:p-4">
-    <div className="flex justify-between items-center">
-      <h2 className="font-semibold text-sm lg:text-base">Hadir</h2>
-      <span className="text-green-500 text-lg">●</span>
-    </div>
-    <p className="text-2xl lg:text-3xl font-bold mt-1">{absensiStats.hadir}</p>
-    <p className="text-xs text-gray-400">Total</p>
-  </div>
+      {/* CARD STATISTIK ABSENSI - 2 KOLOM DI MOBILE, 5 KOLOM DI DESKTOP */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 lg:gap-4 mb-6">
+        {/* Hadir */}
+        <div className="dashboard-stat-card bg-white rounded-xl shadow p-3 lg:p-4">
+          <div className="flex justify-between items-center">
+            <h2 className="font-semibold text-sm lg:text-base">Hadir</h2>
+            <span className="text-green-500 text-lg">●</span>
+          </div>
+          <p className="text-2xl lg:text-3xl font-bold mt-1">{absensiStats.hadir}</p>
+          <p className="text-xs text-gray-400">Total</p>
+        </div>
 
-  {/* Terlambat */}
-  <div className="bg-white rounded-xl shadow p-3 lg:p-4">
-    <div className="flex justify-between items-center">
-      <h2 className="font-semibold text-sm lg:text-base">Terlambat</h2>
-      <span className="text-yellow-500 text-lg">●</span>
-    </div>
-    <p className="text-2xl lg:text-3xl font-bold mt-1">{absensiStats.terlambat}</p>
-    <p className="text-xs text-gray-400">Total</p>
-  </div>
+        {/* Terlambat */}
+        <div className="dashboard-stat-card bg-white rounded-xl shadow p-3 lg:p-4">
+          <div className="flex justify-between items-center">
+            <h2 className="font-semibold text-sm lg:text-base">Terlambat</h2>
+            <span className="text-yellow-500 text-lg">●</span>
+          </div>
+          <p className="text-2xl lg:text-3xl font-bold mt-1">{absensiStats.terlambat}</p>
+          <p className="text-xs text-gray-400">Total</p>
+        </div>
 
-  {/* Sakit */}
-  <div className="bg-white rounded-xl shadow p-3 lg:p-4">
-    <div className="flex justify-between items-center">
-      <h2 className="font-semibold text-sm lg:text-base">Sakit</h2>
-      <span className="text-blue-500 text-lg">●</span>
-    </div>
-    <p className="text-2xl lg:text-3xl font-bold mt-1">{absensiStats.sakit}</p>
-    <p className="text-xs text-gray-400">Total</p>
-  </div>
+        {/* Sakit */}
+        <div className="dashboard-stat-card bg-white rounded-xl shadow p-3 lg:p-4">
+          <div className="flex justify-between items-center">
+            <h2 className="font-semibold text-sm lg:text-base">Sakit</h2>
+            <span className="text-blue-500 text-lg">●</span>
+          </div>
+          <p className="text-2xl lg:text-3xl font-bold mt-1">{absensiStats.sakit}</p>
+          <p className="text-xs text-gray-400">Total</p>
+        </div>
 
-  {/* Izin */}
-  <div className="bg-white rounded-xl shadow p-3 lg:p-4">
-    <div className="flex justify-between items-center">
-      <h2 className="font-semibold text-sm lg:text-base">Izin</h2>
-      <span className="text-purple-500 text-lg">●</span>
-    </div>
-    <p className="text-2xl lg:text-3xl font-bold mt-1">{absensiStats.izin}</p>
-    <p className="text-xs text-gray-400">Total</p>
-  </div>
+        {/* Izin */}
+        <div className="dashboard-stat-card bg-white rounded-xl shadow p-3 lg:p-4">
+          <div className="flex justify-between items-center">
+            <h2 className="font-semibold text-sm lg:text-base">Izin</h2>
+            <span className="text-purple-500 text-lg">●</span>
+          </div>
+          <p className="text-2xl lg:text-3xl font-bold mt-1">{absensiStats.izin}</p>
+          <p className="text-xs text-gray-400">Total</p>
+        </div>
 
-  {/* Alpha */}
-  <div className="bg-white rounded-xl shadow p-3 lg:p-4">
-    <div className="flex justify-between items-center">
-      <h2 className="font-semibold text-sm lg:text-base">Alpha</h2>
-      <span className="text-red-500 text-lg">●</span>
-    </div>
-    <p className="text-2xl lg:text-3xl font-bold mt-1">{absensiStats.alpha}</p>
-    <p className="text-xs text-gray-400">Total</p>
-  </div>
-</div>
+        {/* Alpha */}
+        <div className="dashboard-stat-card bg-white rounded-xl shadow p-3 lg:p-4">
+          <div className="flex justify-between items-center">
+            <h2 className="font-semibold text-sm lg:text-base">Alpha</h2>
+            <span className="text-red-500 text-lg">●</span>
+          </div>
+          <p className="text-2xl lg:text-3xl font-bold mt-1">{absensiStats.alpha}</p>
+          <p className="text-xs text-gray-400">Total</p>
+        </div>
+      </div>
 
       {/* AKSI CEPAT */}
-      <div className="bg-white rounded-xl shadow p-5 mb-6">
+      <div className="dashboard-stat-card bg-white rounded-xl shadow p-5 mb-6">
         <h2 className="font-semibold">Aksi Cepat</h2>
         <p className="text-gray-400 text-sm mb-4">
           Mulai dari sini untuk menyelesaikan requirements
@@ -148,7 +148,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* TODO LIST */}
-      <div className="bg-white rounded-xl shadow p-4">
+      <div className="dashboard-stat-card bg-white rounded-xl shadow p-4">
         <div className="flex justify-between items-center mb-4">
           <h2 className="font-semibold">Todo List Anda</h2>
           <div className="text-sm text-gray-500">

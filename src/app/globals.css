@@ -8,3 +8,46 @@
 @theme {
   --font-inter: "Inter", sans-serif;
 }
+
+/* Animated cards untuk dashboard dan absence */
+.dashboard-stat-card {
+  animation: gentleBounce 0.5s ease-out forwards;
+  opacity: 0;
+}
+
+.drawer-content {
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes gentleBounce {
+  0% {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  50% {
+    opacity: 0.8;
+    transform: translateY(-4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Delay untuk tiap card */
+.dashboard-stat-card:nth-child(1) { animation-delay: 0.1s; }
+.dashboard-stat-card:nth-child(2) { animation-delay: 0.15s; }
+.dashboard-stat-card:nth-child(3) { animation-delay: 0.2s; }
+.dashboard-stat-card:nth-child(4) { animation-delay: 0.25s; }
+.dashboard-stat-card:nth-child(5) { animation-delay: 0.3s; }
+.dashboard-stat-card:nth-child(6) { animation-delay: 0.35s; }
+.dashboard-stat-card:nth-child(7) { animation-delay: 0.4s; }
+.dashboard-stat-card:nth-child(8) { animation-delay: 0.45s; }
+.dashboard-stat-card:nth-child(9) { animation-delay: 0.5s; }
+.dashboard-stat-card:nth-child(10) { animation-delay: 0.55s; }
+.dashboard-stat-card:nth-child(11) { animation-delay: 0.6s; }
+.dashboard-stat-card:nth-child(12) { animation-delay: 0.65s; }
+.dashboard-stat-card:nth-child(13) { animation-delay: 0.7s; }
+.dashboard-stat-card:nth-child(14) { animation-delay: 0.75s; }
+.dashboard-stat-card:nth-child(15) { animation-delay: 0.8s; }

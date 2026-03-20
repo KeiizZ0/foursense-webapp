@@ -19,8 +19,10 @@ import { createTodo, getMyTodos, markAsDone, deleteTodo, updateTodo } from "@/re
 import { checkIn } from "@/restApi/absence.api";
 import { useUserStorage } from "@/store/user.store";
 import { ApiClient } from "@/lib/helpers/axios";
+import { useSearchParams } from "next/navigation";
 
 export default function AbsencePage() {
+  const searchParams = useSearchParams();
   const { myData } = useUserStorage();
   const [activeTab, setActiveTab] = useState<"tasks" | "absence">("tasks");
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -85,10 +87,34 @@ export default function AbsencePage() {
   const sudahLewatBatas = statusAbsenSekarang === "Alpa";
   const absenDisabled = tasks.length === 0 || sudahAbsenHariIni || sudahLewatBatas;
 
+  // Efek untuk baca parameter dari URL
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    const openModal = searchParams.get('openModal');
+    
+    if (tab === 'absence') {
+      setActiveTab('absence');
+      
+      setTimeout(() => {
+        const absenSection = document.getElementById('absen-section');
+        if (absenSection) {
+          absenSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 300);
+
+      if (openModal === 'true' && !sudahAbsenHariIni && !sudahLewatBatas && tasks.length > 0) {
+        setTimeout(() => {
+          setShowAbsenModal(true);
+        }, 500);
+      }
+    }
+  }, [searchParams, sudahAbsenHariIni, sudahLewatBatas, tasks.length]);
+
   async function fetchTodos() {
     setIsLoadingTasks(true);
     try {
       const data = await getMyTodos();
+      console.log("RESPONSE TODO:", data);
       setTasks(data);
     } catch (err) {
       console.error("Gagal fetch tasks:", err);
@@ -124,7 +150,6 @@ export default function AbsencePage() {
         status: mapStatusAbsen(a.status),
       }));
 
-      // Cek Alpa setelah data API masuk
       const sudahAdaHariIni = mapped.some((a) => a.date === today);
       if (sudahLewatBatas && !sudahAdaHariIni) {
         mapped.unshift({ date: today, status: "Alpa" });
@@ -164,32 +189,80 @@ export default function AbsencePage() {
     }
   }
 
+  // ========== INI FUNGSI EDIT YANG SUDAH DIPERBAIKI ==========
   function handleOpenEdit(task: Task) {
+    console.log("Task yang diedit:", task);
     setEditTask(task);
     setEditTitle(task.title);
     setEditDescription(task.description ?? "");
-    setEditDeadline(task.deadlineISO ? task.deadlineISO.split("T")[0] : "");
+    
+    // Parse tanggal dari berbagai format
+    let deadlineValue = "";
+    
+    // Cek dari deadlineISO (format ISO)
+    if (task.deadlineISO && task.deadlineISO !== "") {
+      deadlineValue = task.deadlineISO.split("T")[0];
+    } 
+    // Cek dari date (format "DD/MM/YYYY")
+    else if (task.date && task.date !== "") {
+      try {
+        // Parse format "DD/MM/YYYY" jadi "YYYY-MM-DD"
+        const parts = task.date.split('/');
+        if (parts.length === 3) {
+          // Asumsi: parts[0] = DD, parts[1] = MM, parts[2] = YYYY
+          const day = parts[0].padStart(2, '0');
+          const month = parts[1].padStart(2, '0');
+          const year = parts[2];
+          deadlineValue = `${year}-${month}-${day}`;
+          console.log("Hasil parse tanggal:", deadlineValue);
+        }
+      } catch (e) {
+        console.error("Gagal parse tanggal:", e);
+      }
+    }
+    
+    setEditDeadline(deadlineValue);
     setEditError("");
     setShowEditModal(true);
   }
 
+  // ========== INI FUNGSI SAVE EDIT YANG SUDAH DIPERBAIKI ==========
   async function handleSaveEdit() {
-    if (!editTitle.trim()) { setEditError("Judul tidak boleh kosong!"); return; }
+    if (!editTitle.trim()) { 
+      setEditError("Judul tidak boleh kosong!"); 
+      return; 
+    }
     if (!editTask) return;
+    
     setIsEditLoading(true);
     setEditError("");
+    
     try {
-      await updateTodo(editTask.id, {
+      // Kirim deadline dalam format yang benar
+      const deadlineToSend = editDeadline ? new Date(editDeadline).toISOString() : undefined;
+      
+      console.log("Mengirim update:", {
+        id: editTask.id,
         activity: editTitle,
         description: editDescription,
-        deadline: editDeadline || undefined,
+        deadline: deadlineToSend
       });
+      
+      const response = await updateTodo(editTask.id, {
+        activity: editTitle,
+        description: editDescription,
+        deadline: deadlineToSend,
+      });
+      
+      console.log("UPDATE RESPONSE:", response);
+      
       await new Promise(r => setTimeout(r, 300));
       await fetchTodos();
       setShowEditModal(false);
       setEditTask(null);
       showToast("✓ Tugas berhasil diupdate!");
     } catch (err: any) {
+      console.error("Error update:", err);
       setEditError(err.message ?? "Gagal mengupdate tugas");
     } finally {
       setIsEditLoading(false);
@@ -247,33 +320,59 @@ export default function AbsencePage() {
         Selesaikan tugas Anda terlebih dahulu sebelum dapat melakukan absensi
       </p>
 
+      {/* Stat Cards dengan animasi */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-4 lg:mb-6">
-        <StatCard title="Tugas Tertunda" value={pending.length.toString()} color="red" />
-        <StatCard title="Tugas Selesai" value={completed.length.toString()} color="green" />
-        <StatCard
-          title="Status Absensi"
-          value={statusHariIni ?? "-"}
-          color={statusHariIni === "Hadir" ? "green" : statusHariIni === "Terlambat" ? "blue" : statusHariIni === "Alpa" ? "red" : "blue"}
-        />
-        <StatCard
-          title="Progress"
-          value={tasks.length > 0 ? `${Math.round((completed.length / tasks.length) * 100)}%` : "0%"}
-          color="purple"
-        />
+        <div className="dashboard-stat-card">
+          <StatCard title="Tugas Tertunda" value={pending.length.toString()} color="red" />
+        </div>
+        <div className="dashboard-stat-card">
+          <StatCard title="Tugas Selesai" value={completed.length.toString()} color="green" />
+        </div>
+        <div className="dashboard-stat-card">
+          <StatCard
+            title="Status Absensi"
+            value={statusHariIni ?? "-"}
+            color={statusHariIni === "Hadir" ? "green" : statusHariIni === "Terlambat" ? "blue" : statusHariIni === "Alpa" ? "red" : "blue"}
+          />
+        </div>
+        <div className="dashboard-stat-card">
+          <StatCard
+            title="Progress"
+            value={tasks.length > 0 ? `${Math.round((completed.length / tasks.length) * 100)}%` : "0%"}
+            color="purple"
+          />
+        </div>
       </div>
 
+      {/* Tab buttons dengan animasi */}
       <div className="grid grid-cols-2 gap-3 lg:gap-4 mb-4">
-        <button onClick={() => setActiveTab("tasks")} className={`py-2 rounded-xl font-medium text-sm lg:text-base ${activeTab === "tasks" ? "bg-white shadow" : "bg-gray-100 text-gray-400"}`}>
-          Tugas ({pending.length})
-        </button>
-        <button onClick={() => setActiveTab("absence")} className={`py-2 rounded-xl font-medium text-sm lg:text-base ${activeTab === "absence" ? "bg-white shadow" : "bg-gray-100 text-gray-400"}`}>
-          Absensi
-        </button>
+        <div className="dashboard-stat-card">
+          <button 
+            onClick={() => setActiveTab("tasks")} 
+            className={`w-full py-2 rounded-xl font-medium text-sm lg:text-base ${activeTab === "tasks" ? "bg-white shadow" : "bg-gray-100 text-gray-400"}`}
+          >
+            Tugas ({pending.length})
+          </button>
+        </div>
+        <div className="dashboard-stat-card">
+          <button 
+            onClick={() => setActiveTab("absence")} 
+            className={`w-full py-2 rounded-xl font-medium text-sm lg:text-base ${activeTab === "absence" ? "bg-white shadow" : "bg-gray-100 text-gray-400"}`}
+          >
+            Absensi
+          </button>
+        </div>
       </div>
 
-      <button onClick={() => setShowModal(true)} className="w-full bg-blue-600 text-white py-2 rounded mb-4 lg:mb-6 text-sm lg:text-base">
-        + Tambah Tugas Baru
-      </button>
+      {/* Button Tambah Tugas dengan animasi */}
+      <div className="dashboard-stat-card">
+        <button 
+          onClick={() => setShowModal(true)} 
+          className="w-full bg-blue-600 text-white py-2 rounded mb-4 lg:mb-6 text-sm lg:text-base"
+        >
+          + Tambah Tugas Baru
+        </button>
+      </div>
 
       {/* Modal Tambah */}
       {showModal && (
@@ -299,7 +398,7 @@ export default function AbsencePage() {
         </div>
       )}
 
-      {/* Modal Edit */}
+      {/* ========== MODAL EDIT YANG SUDAH DIPERBAIKI ========== */}
       {showEditModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
           <div className="bg-white rounded-2xl p-5 lg:p-6 w-full max-w-md shadow-xl">
@@ -308,20 +407,48 @@ export default function AbsencePage() {
             <div className="space-y-3">
               <div>
                 <label className="text-sm text-gray-500">Judul Tugas</label>
-                <input type="text" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="w-full border rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                <input 
+                  type="text" 
+                  value={editTitle} 
+                  onChange={(e) => setEditTitle(e.target.value)} 
+                  className="w-full border rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" 
+                />
               </div>
               <div>
                 <label className="text-sm text-gray-500">Deskripsi</label>
-                <input type="text" value={editDescription} onChange={(e) => setEditDescription(e.target.value)} placeholder="Opsional" className="w-full border rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                <input 
+                  type="text" 
+                  value={editDescription} 
+                  onChange={(e) => setEditDescription(e.target.value)} 
+                  placeholder="Opsional" 
+                  className="w-full border rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" 
+                />
               </div>
               <div>
                 <label className="text-sm text-gray-500">Batas Waktu</label>
-                <input type="date" value={editDeadline} onChange={(e) => setEditDeadline(e.target.value)} min={todayISO} className="w-full border rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                <input 
+                  type="date" 
+                  value={editDeadline} 
+                  onChange={(e) => setEditDeadline(e.target.value)} 
+                  min={todayISO} 
+                  className="w-full border rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" 
+                />
               </div>
             </div>
             <div className="flex gap-3 mt-5">
-              <button onClick={() => { setShowEditModal(false); setEditTask(null); }} className="flex-1 py-2 rounded-lg border text-gray-500 hover:bg-gray-50 text-sm">Batal</button>
-              <button onClick={handleSaveEdit} disabled={isEditLoading} className="flex-1 py-2 rounded-lg bg-blue-600 text-white disabled:opacity-50 text-sm">{isEditLoading ? "Menyimpan..." : "Simpan"}</button>
+              <button 
+                onClick={() => { setShowEditModal(false); setEditTask(null); }} 
+                className="flex-1 py-2 rounded-lg border text-gray-500 hover:bg-gray-50 text-sm"
+              >
+                Batal
+              </button>
+              <button 
+                onClick={handleSaveEdit} 
+                disabled={isEditLoading} 
+                className="flex-1 py-2 rounded-lg bg-blue-600 text-white disabled:opacity-50 text-sm"
+              >
+                {isEditLoading ? "Menyimpan..." : "Simpan"}
+              </button>
             </div>
           </div>
         </div>
@@ -360,13 +487,18 @@ export default function AbsencePage() {
             <>
               <h2 className="font-semibold mb-3 text-sm lg:text-base">Tugas Tertunda</h2>
               {pending.length === 0 && <p className="text-gray-400 text-sm mb-4">Tidak ada tugas tertunda.</p>}
-              {pending.map((task) => (
-                <TaskItem key={task.id} task={task} onToggle={handleToggle} onDelete={handleDelete} onEdit={handleOpenEdit} />
+              {pending.map((task, index) => (
+                <div key={task.id} className="dashboard-stat-card" style={{ animationDelay: `${0.2 + index * 0.05}s` }}>
+                  <TaskItem task={task} onToggle={handleToggle} onDelete={handleDelete} onEdit={handleOpenEdit} />
+                </div>
               ))}
+              
               <h2 className="font-semibold mt-6 mb-3 text-sm lg:text-base">Tugas Selesai</h2>
               {completed.length === 0 && <p className="text-gray-400 text-sm">Belum ada tugas selesai.</p>}
-              {completed.map((task) => (
-                <TaskItem key={task.id} task={task} onToggle={handleToggle} onDelete={handleDelete} onEdit={handleOpenEdit} />
+              {completed.map((task, index) => (
+                <div key={task.id} className="dashboard-stat-card" style={{ animationDelay: `${0.4 + index * 0.05}s` }}>
+                  <TaskItem task={task} onToggle={handleToggle} onDelete={handleDelete} onEdit={handleOpenEdit} />
+                </div>
               ))}
             </>
           )}
@@ -375,64 +507,68 @@ export default function AbsencePage() {
 
       {/* Tab Absensi */}
       {activeTab === "absence" && (
-        <div className="space-y-4 lg:space-y-6">
-          <div className="border rounded-xl p-4 lg:p-6 bg-blue-50">
-            <h3 className="font-semibold text-sm lg:text-base">Absen Hari Ini</h3>
-            <p className="text-sm text-gray-500 mb-4">
-              {new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
-            </p>
-
-            {tasks.length === 0 && !sudahLewatBatas && (
-              <div className="bg-yellow-100 text-yellow-700 p-3 rounded mb-4 text-sm">
-                ⚠ Tombol Absensi Dinonaktifkan<br />
-                Kamu belum input tugas apapun. Tambahkan minimal 1 tugas terlebih dahulu.
-                <button onClick={() => { setActiveTab("tasks"); setShowModal(true); }} className="block mt-2 text-blue-600 underline text-xs">+ Tambah tugas sekarang</button>
-              </div>
-            )}
-
-            {sudahLewatBatas && (
-              <div className="bg-red-100 text-red-700 p-3 rounded mb-4 text-sm">❌ Waktu absensi sudah habis!</div>
-            )}
-
-            {statusAbsenSekarang === "Terlambat" && !sudahAbsenHariIni && (
-              <div className="bg-yellow-100 text-yellow-700 p-3 rounded mb-4 text-sm">
-                ⚠ Kamu akan tercatat <strong>Terlambat</strong> jika melakukan absen sekarang.<br />Batas hadir sudah lewat!
-              </div>
-            )}
-
-            {sudahAbsenHariIni && (
-              <div className={`p-3 rounded mb-4 text-sm ${
-                statusHariIni === "Hadir" ? "bg-green-100 text-green-700"
-                : statusHariIni === "Terlambat" ? "bg-yellow-100 text-yellow-700"
-                : statusHariIni === "Sakit" ? "bg-blue-100 text-blue-700"
-                : statusHariIni === "Izin" ? "bg-purple-100 text-purple-700"
-                : "bg-red-100 text-red-700"
-              }`}>
-                {statusHariIni === "Hadir" && "✓ Kamu sudah absen hari ini — Hadir!"}
-                {statusHariIni === "Terlambat" && "⚠ Kamu sudah absen hari ini — Terlambat."}
-                {statusHariIni === "Sakit" && "🤒 Kamu tercatat Sakit hari ini."}
-                {statusHariIni === "Izin" && "📝 Kamu tercatat Izin hari ini."}
-                {statusHariIni === "Alpa" && <span>❌ Kamu sudah tercatat <strong>Alpa</strong> hari ini.</span>}
-              </div>
-            )}
-
-            <button
-              disabled={absenDisabled}
-              onClick={() => !absenDisabled && setShowAbsenModal(true)}
-              className={`w-24 h-24 lg:w-28 lg:h-28 rounded-full flex flex-col items-center justify-center mx-auto shadow-2xl border-4 transition-all duration-300 ${absenDisabled ? "bg-gray-300 text-gray-400 cursor-not-allowed border-gray-200" : statusAbsenSekarang === "Terlambat" ? "bg-gradient-to-br from-yellow-400 to-yellow-500 text-white cursor-pointer border-yellow-300 hover:scale-105" : "bg-gradient-to-br from-green-400 to-green-600 text-white cursor-pointer border-green-300 hover:scale-105"}`}
-            >
-              <span className="text-lg lg:text-xl">{absenDisabled ? "🔒" : statusAbsenSekarang === "Terlambat" ? "⚠" : "✓"}</span>
-              <span className="font-bold text-xs lg:text-sm">Absensi</span>
-            </button>
-
-            {!absenDisabled && (
-              <p className={`text-center text-xs lg:text-sm mt-3 ${statusAbsenSekarang === "Terlambat" ? "text-yellow-600" : "text-green-600"}`}>
-                {statusAbsenSekarang === "Terlambat" ? "Kamu akan tercatat terlambat ⚠" : "Kamu bisa absen sekarang ✓"}
+        <div id="absen-section" className="space-y-4 lg:space-y-6">
+          {/* Section Absen Hari Ini */}
+          <div className="dashboard-stat-card">
+            <div className="border rounded-xl p-4 lg:p-6 bg-blue-50">
+              <h3 className="font-semibold text-sm lg:text-base">Absen Hari Ini</h3>
+              <p className="text-sm text-gray-500 mb-4">
+                {new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
               </p>
-            )}
+
+              {tasks.length === 0 && !sudahLewatBatas && (
+                <div className="bg-yellow-100 text-yellow-700 p-3 rounded mb-4 text-sm">
+                  ⚠ Tombol Absensi Dinonaktifkan<br />
+                  Kamu belum input tugas apapun. Tambahkan minimal 1 tugas terlebih dahulu.
+                  <button onClick={() => { setActiveTab("tasks"); setShowModal(true); }} className="block mt-2 text-blue-600 underline text-xs">+ Tambah tugas sekarang</button>
+                </div>
+              )}
+
+              {sudahLewatBatas && (
+                <div className="bg-red-100 text-red-700 p-3 rounded mb-4 text-sm">❌ Waktu absensi sudah habis!</div>
+              )}
+
+              {statusAbsenSekarang === "Terlambat" && !sudahAbsenHariIni && (
+                <div className="bg-yellow-100 text-yellow-700 p-3 rounded mb-4 text-sm">
+                  ⚠ Kamu akan tercatat <strong>Terlambat</strong> jika melakukan absen sekarang.<br />Batas hadir sudah lewat!
+                </div>
+              )}
+
+              {sudahAbsenHariIni && (
+                <div className={`p-3 rounded mb-4 text-sm ${
+                  statusHariIni === "Hadir" ? "bg-green-100 text-green-700"
+                  : statusHariIni === "Terlambat" ? "bg-yellow-100 text-yellow-700"
+                  : statusHariIni === "Sakit" ? "bg-blue-100 text-blue-700"
+                  : statusHariIni === "Izin" ? "bg-purple-100 text-purple-700"
+                  : "bg-red-100 text-red-700"
+                }`}>
+                  {statusHariIni === "Hadir" && "✓ Kamu sudah absen hari ini — Hadir!"}
+                  {statusHariIni === "Terlambat" && "⚠ Kamu sudah absen hari ini — Terlambat."}
+                  {statusHariIni === "Sakit" && "🤒 Kamu tercatat Sakit hari ini."}
+                  {statusHariIni === "Izin" && "📝 Kamu tercatat Izin hari ini."}
+                  {statusHariIni === "Alpa" && <span>❌ Kamu sudah tercatat <strong>Alpa</strong> hari ini.</span>}
+                </div>
+              )}
+
+              <button
+                disabled={absenDisabled}
+                onClick={() => !absenDisabled && setShowAbsenModal(true)}
+                className={`w-24 h-24 lg:w-28 lg:h-28 rounded-full flex flex-col items-center justify-center mx-auto shadow-2xl border-4 transition-all duration-300 ${absenDisabled ? "bg-gray-300 text-gray-400 cursor-not-allowed border-gray-200" : statusAbsenSekarang === "Terlambat" ? "bg-gradient-to-br from-yellow-400 to-yellow-500 text-white cursor-pointer border-yellow-300 hover:scale-105" : "bg-gradient-to-br from-green-400 to-green-600 text-white cursor-pointer border-green-300 hover:scale-105"}`}
+              >
+                <span className="text-lg lg:text-xl">{absenDisabled ? "🔒" : statusAbsenSekarang === "Terlambat" ? "⚠" : "✓"}</span>
+                <span className="font-bold text-xs lg:text-sm">Absensi</span>
+              </button>
+
+              {!absenDisabled && (
+                <p className={`text-center text-xs lg:text-sm mt-3 ${statusAbsenSekarang === "Terlambat" ? "text-yellow-600" : "text-green-600"}`}>
+                  {statusAbsenSekarang === "Terlambat" ? "Kamu akan tercatat terlambat ⚠" : "Kamu bisa absen sekarang ✓"}
+                </p>
+              )}
+            </div>
           </div>
 
-          <div>
+          {/* Riwayat Absensi */}
+          <div className="dashboard-stat-card">
             <h3 className="font-semibold mb-3 text-sm lg:text-base">Riwayat Absensi</h3>
             {isLoadingHistory ? (
               <div className="text-center py-6 text-gray-400">
@@ -441,7 +577,11 @@ export default function AbsencePage() {
             ) : absenceHistory.length === 0 ? (
               <p className="text-gray-400 text-sm">Belum ada riwayat absensi.</p>
             ) : (
-              absenceHistory.map((item, i) => <AbsenceItem key={i} date={item.date} status={item.status} />)
+              absenceHistory.map((item, i) => (
+                <div key={i} className="dashboard-stat-card" style={{ animationDelay: `${0.3 + i * 0.05}s` }}>
+                  <AbsenceItem date={item.date} status={item.status} />
+                </div>
+              ))
             )}
           </div>
         </div>
