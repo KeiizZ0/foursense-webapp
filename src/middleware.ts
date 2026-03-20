@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "./lib/helpers/jose";
 import { refresh } from "./lib/helpers/auth";
+;
 
 const publicRoute = ["/", "/forgot-password"];
 const roleAccess: Record<string, string> = {
@@ -8,7 +9,7 @@ const roleAccess: Record<string, string> = {
   TEACHER: "/teacher",
   STUDENT: "/student",
 };
-const allowedSubPaths = ["dashboard", "absence", "DataSiswa"];
+const allowedSubPaths = ["dashboard", "absence", "DataSiswa", "daftarAkun", "ExportDataKelas"];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;

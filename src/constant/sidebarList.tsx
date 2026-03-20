@@ -1,5 +1,5 @@
 
-import { FileCheckCorner, Home, User, Users } from "lucide-react";
+import { FileCheckCorner, Home, User, Users, Album } from "lucide-react";
 
 enum Role {
   UNREGISTERED = "UNREGISTERED",
@@ -10,7 +10,7 @@ enum Role {
 
 export const sidebarList = (slug: string, role: Role) => {
   const roleList = role?.toLowerCase();
-  const menu = [
+  let menu: any[] = [
     {
       Page: "Dashboard",
       Icon: <Home />,
@@ -20,6 +20,16 @@ export const sidebarList = (slug: string, role: Role) => {
       Page: "Absence",
       Icon: <FileCheckCorner />,
       link: `/${roleList}/absence`,
+    },
+    {
+      Page: "ExportDataSiswa",
+      Icon: <Album />,
+      link: `/${roleList}/ExportDataKelas`,
+    },
+    {
+      Page: "DaftarAkun",
+      Icon: <Users />,
+      link: `/${roleList}/daftarAkun`,
     },
     {
       Page: "Profile",
@@ -34,6 +44,10 @@ export const sidebarList = (slug: string, role: Role) => {
       Icon: <Users />,
       link: `/teacher/DataSiswa`,
     });
+  }
+
+  if (role !== Role.ADMIN) {
+    menu = menu.filter(item => item.Page !== "ExportDataSiswa" && item.Page !== "DaftarAkun");
   }
 
   return menu;

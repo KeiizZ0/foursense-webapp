@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiClient } from "@/lib/helpers/axios"; // ready to use component, sebaiknya jangan diubah
-import { UserData, UserRes } from "@/type/user.type"; // pendefinisian data disimpan disini
+import { UserData, UserRes, AllUsersRes } from "@/type/user.type"; // pendefinisian data disimpan disini
 
 export async function showMeAPI(): Promise<UserData> {
   // return akan mengembalikan show me data
@@ -26,4 +26,26 @@ export async function getOneUserAPI(id: string) {
     withCredentials: true,
   });
   return res.data.data;
+}
+
+export async function createStudentAPI(data: { name: string; email: string; password: string; nis: number; kelas: string }) {
+  const res = await ApiClient.post('/api/user/student', data, {
+    headers: {
+      "Content-Type": "application/json",
+      "ngrok-skip-browser-warning": "true",
+    },
+    withCredentials: true,
+  });
+  return res.data;
+}
+
+export async function getAllUserSummaryAPI(): Promise<AllUsersRes> {
+  const res = await ApiClient.get<AllUsersRes>("/api/user/get-all", {
+    headers: {
+      "Content-Type": "application/json",
+      "ngrok-skip-browser-warning": "true",
+    },
+    withCredentials: true,
+  });
+  return res.data;
 }

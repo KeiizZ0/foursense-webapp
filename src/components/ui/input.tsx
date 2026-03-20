@@ -2,8 +2,16 @@ import { Eye, EyeOff } from "lucide-react";
 import React, { useId, useState } from "react";
 
 interface InputFloatingLabel {
-  type: "text" | "email" | "password";
-  placeholder: string;
+  type?: "text" | "email" | "password";
+  placeholder?: string;
+  className?: string;
+  name?: string;
+  id?: string;
+  ref?: React.RefCallback<HTMLInputElement>;
+  onChange?: React.ChangeEventHandler<HTMLInputElement>;
+  onBlur?: React.FocusEventHandler<HTMLInputElement>;
+  value?: string;
+  defaultValue?: string;
 }
 
 export const InputFloatingLabel: React.FC<InputFloatingLabel> = ({
