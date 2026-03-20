@@ -11,7 +11,7 @@ type Task = {
 
 type AbsenceRecord = {
   date: string;
-  status: "Hadir" | "Terlambat" | "Alpa" | "Sakit" | "Izin";
+  status: "Hadir" | "Terlambat" | "Alpa" | "Sakit" | "Izin" | "Libur";
 };
 
 import { useState, useEffect } from "react";
@@ -58,17 +58,19 @@ export default function AbsencePage() {
   const pending = tasks.filter((t) => !t.done);
   const completed = tasks.filter((t) => t.done);
 
-  const today = new Date().toLocaleDateString("id-ID", {
+  const now = new Date();
+  const today = now.toLocaleDateString("id-ID", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
   });
+  const todayISO = now.toISOString().split("T")[0];
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
 
-  const todayISO = new Date().toISOString().split("T")[0];
   const sudahAbsenHariIni = absenceHistory.some((a) => a.date === today);
 
   function getStatusAbsen(): "Hadir" | "Terlambat" | "Alpa" {
-    const now = new Date();
     const totalMenit = now.getHours() * 60 + now.getMinutes();
     if (totalMenit < 7 * 60) return "Hadir";
     if (totalMenit < 10 * 60) return "Terlambat";
@@ -83,29 +85,26 @@ export default function AbsencePage() {
     return "Alpa";
   }
 
+  function parseDate(dateStr: string): Date {
+    const [dd, mm, yyyy] = dateStr.split("/");
+    return new Date(`${yyyy}-${mm}-${dd}`);
+  }
+
   const statusAbsenSekarang = getStatusAbsen();
   const sudahLewatBatas = statusAbsenSekarang === "Alpa";
   const absenDisabled = tasks.length === 0 || sudahAbsenHariIni || sudahLewatBatas;
 
-  // Efek untuk baca parameter dari URL
   useEffect(() => {
     const tab = searchParams.get('tab');
     const openModal = searchParams.get('openModal');
-    
     if (tab === 'absence') {
       setActiveTab('absence');
-      
       setTimeout(() => {
         const absenSection = document.getElementById('absen-section');
-        if (absenSection) {
-          absenSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
+        if (absenSection) absenSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 300);
-
       if (openModal === 'true' && !sudahAbsenHariIni && !sudahLewatBatas && tasks.length > 0) {
-        setTimeout(() => {
-          setShowAbsenModal(true);
-        }, 500);
+        setTimeout(() => setShowAbsenModal(true), 500);
       }
     }
   }, [searchParams, sudahAbsenHariIni, sudahLewatBatas, tasks.length]);
@@ -114,7 +113,6 @@ export default function AbsencePage() {
     setIsLoadingTasks(true);
     try {
       const data = await getMyTodos();
-      console.log("RESPONSE TODO:", data);
       setTasks(data);
     } catch (err) {
       console.error("Gagal fetch tasks:", err);
@@ -129,9 +127,22 @@ export default function AbsencePage() {
       const studentId = (myData as any)?.student?.id;
       if (!studentId) return;
 
-      const response = await ApiClient.get("/api/absen/get-all", {
-        params: { student: studentId },
-      });
+      const [response, holidayList] = await Promise.all([
+        ApiClient.get("/api/absen/get-all", {
+          params: { student: studentId, limit: 100 },
+        }),
+        fetch("https://raw.githubusercontent.com/gerinsp/dayoff-API/refs/heads/master/data/2026.json")
+          .then((r) => r.json())
+          .catch(() => []),
+      ]);
+
+      // Convert array holiday ke map untuk mudah dicek
+      const holidayMap: Record<string, string> = {};
+      if (Array.isArray(holidayList)) {
+        holidayList.forEach((h: any) => {
+          if (h.tanggal) holidayMap[h.tanggal] = h.keterangan;
+        });
+      }
 
       const all = response.data?.data?.absences || [];
       const userName = myData?.name;
@@ -140,22 +151,45 @@ export default function AbsencePage() {
         ? all.filter((a: any) => a.student?.user?.name === userName)
         : [];
 
-      const mapped: AbsenceRecord[] = mine.map((a: any) => ({
-        date: new Date(a.absenceAt).toLocaleDateString("id-ID", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-          timeZone: "Asia/Jakarta",
-        }),
-        status: mapStatusAbsen(a.status),
-      }));
+      const mapped: AbsenceRecord[] = mine
+        .map((a: any) => ({
+          date: new Date(a.absenceAt).toLocaleDateString("id-ID", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            timeZone: "Asia/Jakarta",
+          }),
+          status: mapStatusAbsen(a.status),
+          _raw: new Date(a.absenceAt),
+        }))
+        .filter((a: any) => {
+          return a._raw.getMonth() === currentMonth && a._raw.getFullYear() === currentYear;
+        })
+        .map(({ _raw, ...rest }: any) => rest);
+
+      const dayOfWeek = now.getDay();
+      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+      const isHoliday = holidayMap[todayISO] !== undefined;
 
       const sudahAdaHariIni = mapped.some((a) => a.date === today);
-      if (sudahLewatBatas && !sudahAdaHariIni) {
-        mapped.unshift({ date: today, status: "Alpa" });
+
+      if (!sudahAdaHariIni) {
+        if (isWeekend || isHoliday) {
+          mapped.unshift({ date: today, status: "Libur" });
+        } else if (sudahLewatBatas) {
+          mapped.unshift({ date: today, status: "Alpa" });
+        }
       }
 
-      setAbsenceHistory(mapped);
+      // Deduplikasi
+      const unique = mapped.filter((item, index, self) =>
+        index === self.findIndex((t) => t.date === item.date)
+      );
+
+      // Sort terbaru di atas
+      unique.sort((a, b) => parseDate(b.date).getTime() - parseDate(a.date).getTime());
+
+      setAbsenceHistory(unique);
     } catch (err) {
       console.error("Gagal fetch history absensi:", err);
     } finally {
@@ -163,13 +197,8 @@ export default function AbsencePage() {
     }
   }
 
-  useEffect(() => {
-    fetchTodos();
-  }, []);
-
-  useEffect(() => {
-    if (myData) fetchAbsenceHistory();
-  }, [myData]);
+  useEffect(() => { fetchTodos(); }, []);
+  useEffect(() => { if (myData) fetchAbsenceHistory(); }, [myData]);
 
   async function handleToggle(id: string) {
     try {
@@ -189,80 +218,45 @@ export default function AbsencePage() {
     }
   }
 
-  // ========== INI FUNGSI EDIT YANG SUDAH DIPERBAIKI ==========
   function handleOpenEdit(task: Task) {
-    console.log("Task yang diedit:", task);
     setEditTask(task);
     setEditTitle(task.title);
     setEditDescription(task.description ?? "");
-    
-    // Parse tanggal dari berbagai format
     let deadlineValue = "";
-    
-    // Cek dari deadlineISO (format ISO)
     if (task.deadlineISO && task.deadlineISO !== "") {
       deadlineValue = task.deadlineISO.split("T")[0];
-    } 
-    // Cek dari date (format "DD/MM/YYYY")
-    else if (task.date && task.date !== "") {
+    } else if (task.date && task.date !== "") {
       try {
-        // Parse format "DD/MM/YYYY" jadi "YYYY-MM-DD"
         const parts = task.date.split('/');
         if (parts.length === 3) {
-          // Asumsi: parts[0] = DD, parts[1] = MM, parts[2] = YYYY
-          const day = parts[0].padStart(2, '0');
-          const month = parts[1].padStart(2, '0');
-          const year = parts[2];
-          deadlineValue = `${year}-${month}-${day}`;
-          console.log("Hasil parse tanggal:", deadlineValue);
+          deadlineValue = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
         }
       } catch (e) {
         console.error("Gagal parse tanggal:", e);
       }
     }
-    
     setEditDeadline(deadlineValue);
     setEditError("");
     setShowEditModal(true);
   }
 
-  // ========== INI FUNGSI SAVE EDIT YANG SUDAH DIPERBAIKI ==========
   async function handleSaveEdit() {
-    if (!editTitle.trim()) { 
-      setEditError("Judul tidak boleh kosong!"); 
-      return; 
-    }
+    if (!editTitle.trim()) { setEditError("Judul tidak boleh kosong!"); return; }
     if (!editTask) return;
-    
     setIsEditLoading(true);
     setEditError("");
-    
     try {
-      // Kirim deadline dalam format yang benar
-      const deadlineToSend = editDeadline ? new Date(editDeadline).toISOString() : undefined;
-      
-      console.log("Mengirim update:", {
-        id: editTask.id,
+      await updateTodo(editTask.id, {
         activity: editTitle,
         description: editDescription,
-        deadline: deadlineToSend
+        deadline: editDeadline || undefined,
       });
-      
-      const response = await updateTodo(editTask.id, {
-        activity: editTitle,
-        description: editDescription,
-        deadline: deadlineToSend,
-      });
-      
-      console.log("UPDATE RESPONSE:", response);
-      
       await new Promise(r => setTimeout(r, 300));
       await fetchTodos();
       setShowEditModal(false);
       setEditTask(null);
       showToast("✓ Tugas berhasil diupdate!");
     } catch (err: any) {
-      console.error("Error update:", err);
       setEditError(err.message ?? "Gagal mengupdate tugas");
     } finally {
       setIsEditLoading(false);
@@ -294,7 +288,11 @@ export default function AbsencePage() {
     try {
       const result = await checkIn();
       const statusDariApi = result.statusIndonesia;
-      setAbsenceHistory((prev) => [{ date: today, status: statusDariApi }, ...prev]);
+      setAbsenceHistory((prev) => {
+        const updated = [{ date: today, status: statusDariApi }, ...prev.filter(a => a.date !== today)];
+        updated.sort((a, b) => parseDate(b.date).getTime() - parseDate(a.date).getTime());
+        return updated;
+      });
       setShowAbsenModal(false);
       showToast("✓ Absensi berhasil dicatat!");
     } catch (err: any) {
@@ -307,7 +305,7 @@ export default function AbsencePage() {
   const statusHariIni = absenceHistory.find((a) => a.date === today)?.status;
 
   return (
-    <div className="p-4 lg:p-8 bg-gray-50 min-h-screen">
+    <div className="p-4 lg:p-8 bg-gray-50 min-h-screen overflow-x-hidden">
 
       {toast.visible && (
         <div className="fixed bottom-6 right-6 z-50 bg-green-500 text-white px-5 py-3 rounded-xl shadow-lg text-sm font-medium">
@@ -320,7 +318,6 @@ export default function AbsencePage() {
         Selesaikan tugas Anda terlebih dahulu sebelum dapat melakukan absensi
       </p>
 
-      {/* Stat Cards dengan animasi */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-4 lg:mb-6">
         <div className="dashboard-stat-card">
           <StatCard title="Tugas Tertunda" value={pending.length.toString()} color="red" />
@@ -344,32 +341,21 @@ export default function AbsencePage() {
         </div>
       </div>
 
-      {/* Tab buttons dengan animasi */}
       <div className="grid grid-cols-2 gap-3 lg:gap-4 mb-4">
         <div className="dashboard-stat-card">
-          <button 
-            onClick={() => setActiveTab("tasks")} 
-            className={`w-full py-2 rounded-xl font-medium text-sm lg:text-base ${activeTab === "tasks" ? "bg-white shadow" : "bg-gray-100 text-gray-400"}`}
-          >
+          <button onClick={() => setActiveTab("tasks")} className={`w-full py-2 rounded-xl font-medium text-sm lg:text-base ${activeTab === "tasks" ? "bg-white shadow" : "bg-gray-100 text-gray-400"}`}>
             Tugas ({pending.length})
           </button>
         </div>
         <div className="dashboard-stat-card">
-          <button 
-            onClick={() => setActiveTab("absence")} 
-            className={`w-full py-2 rounded-xl font-medium text-sm lg:text-base ${activeTab === "absence" ? "bg-white shadow" : "bg-gray-100 text-gray-400"}`}
-          >
+          <button onClick={() => setActiveTab("absence")} className={`w-full py-2 rounded-xl font-medium text-sm lg:text-base ${activeTab === "absence" ? "bg-white shadow" : "bg-gray-100 text-gray-400"}`}>
             Absensi
           </button>
         </div>
       </div>
 
-      {/* Button Tambah Tugas dengan animasi */}
       <div className="dashboard-stat-card">
-        <button 
-          onClick={() => setShowModal(true)} 
-          className="w-full bg-blue-600 text-white py-2 rounded mb-4 lg:mb-6 text-sm lg:text-base"
-        >
+        <button onClick={() => setShowModal(true)} className="w-full bg-blue-600 text-white py-2 rounded mb-4 lg:mb-6 text-sm lg:text-base">
           + Tambah Tugas Baru
         </button>
       </div>
@@ -398,7 +384,7 @@ export default function AbsencePage() {
         </div>
       )}
 
-      {/* ========== MODAL EDIT YANG SUDAH DIPERBAIKI ========== */}
+      {/* Modal Edit */}
       {showEditModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
           <div className="bg-white rounded-2xl p-5 lg:p-6 w-full max-w-md shadow-xl">
@@ -407,48 +393,20 @@ export default function AbsencePage() {
             <div className="space-y-3">
               <div>
                 <label className="text-sm text-gray-500">Judul Tugas</label>
-                <input 
-                  type="text" 
-                  value={editTitle} 
-                  onChange={(e) => setEditTitle(e.target.value)} 
-                  className="w-full border rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" 
-                />
+                <input type="text" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="w-full border rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
               </div>
               <div>
                 <label className="text-sm text-gray-500">Deskripsi</label>
-                <input 
-                  type="text" 
-                  value={editDescription} 
-                  onChange={(e) => setEditDescription(e.target.value)} 
-                  placeholder="Opsional" 
-                  className="w-full border rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" 
-                />
+                <input type="text" value={editDescription} onChange={(e) => setEditDescription(e.target.value)} placeholder="Opsional" className="w-full border rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
               </div>
               <div>
                 <label className="text-sm text-gray-500">Batas Waktu</label>
-                <input 
-                  type="date" 
-                  value={editDeadline} 
-                  onChange={(e) => setEditDeadline(e.target.value)} 
-                  min={todayISO} 
-                  className="w-full border rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" 
-                />
+                <input type="date" value={editDeadline} onChange={(e) => setEditDeadline(e.target.value)} min={todayISO} className="w-full border rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
               </div>
             </div>
             <div className="flex gap-3 mt-5">
-              <button 
-                onClick={() => { setShowEditModal(false); setEditTask(null); }} 
-                className="flex-1 py-2 rounded-lg border text-gray-500 hover:bg-gray-50 text-sm"
-              >
-                Batal
-              </button>
-              <button 
-                onClick={handleSaveEdit} 
-                disabled={isEditLoading} 
-                className="flex-1 py-2 rounded-lg bg-blue-600 text-white disabled:opacity-50 text-sm"
-              >
-                {isEditLoading ? "Menyimpan..." : "Simpan"}
-              </button>
+              <button onClick={() => { setShowEditModal(false); setEditTask(null); }} className="flex-1 py-2 rounded-lg border text-gray-500 hover:bg-gray-50 text-sm">Batal</button>
+              <button onClick={handleSaveEdit} disabled={isEditLoading} className="flex-1 py-2 rounded-lg bg-blue-600 text-white disabled:opacity-50 text-sm">{isEditLoading ? "Menyimpan..." : "Simpan"}</button>
             </div>
           </div>
         </div>
@@ -492,7 +450,6 @@ export default function AbsencePage() {
                   <TaskItem task={task} onToggle={handleToggle} onDelete={handleDelete} onEdit={handleOpenEdit} />
                 </div>
               ))}
-              
               <h2 className="font-semibold mt-6 mb-3 text-sm lg:text-base">Tugas Selesai</h2>
               {completed.length === 0 && <p className="text-gray-400 text-sm">Belum ada tugas selesai.</p>}
               {completed.map((task, index) => (
@@ -508,12 +465,11 @@ export default function AbsencePage() {
       {/* Tab Absensi */}
       {activeTab === "absence" && (
         <div id="absen-section" className="space-y-4 lg:space-y-6">
-          {/* Section Absen Hari Ini */}
           <div className="dashboard-stat-card">
             <div className="border rounded-xl p-4 lg:p-6 bg-blue-50">
               <h3 className="font-semibold text-sm lg:text-base">Absen Hari Ini</h3>
               <p className="text-sm text-gray-500 mb-4">
-                {new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+                {now.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
               </p>
 
               {tasks.length === 0 && !sudahLewatBatas && (
@@ -540,12 +496,14 @@ export default function AbsencePage() {
                   : statusHariIni === "Terlambat" ? "bg-yellow-100 text-yellow-700"
                   : statusHariIni === "Sakit" ? "bg-blue-100 text-blue-700"
                   : statusHariIni === "Izin" ? "bg-purple-100 text-purple-700"
+                  : statusHariIni === "Libur" ? "bg-gray-100 text-gray-600"
                   : "bg-red-100 text-red-700"
                 }`}>
                   {statusHariIni === "Hadir" && "✓ Kamu sudah absen hari ini — Hadir!"}
                   {statusHariIni === "Terlambat" && "⚠ Kamu sudah absen hari ini — Terlambat."}
                   {statusHariIni === "Sakit" && "🤒 Kamu tercatat Sakit hari ini."}
                   {statusHariIni === "Izin" && "📝 Kamu tercatat Izin hari ini."}
+                  {statusHariIni === "Libur" && "🎉 Hari ini adalah hari libur!"}
                   {statusHariIni === "Alpa" && <span>❌ Kamu sudah tercatat <strong>Alpa</strong> hari ini.</span>}
                 </div>
               )}
@@ -567,15 +525,17 @@ export default function AbsencePage() {
             </div>
           </div>
 
-          {/* Riwayat Absensi */}
           <div className="dashboard-stat-card">
-            <h3 className="font-semibold mb-3 text-sm lg:text-base">Riwayat Absensi</h3>
+            <h3 className="font-semibold mb-1 text-sm lg:text-base">Riwayat Absensi</h3>
+            <p className="text-xs text-gray-400 mb-3">
+              {now.toLocaleDateString("id-ID", { month: "long", year: "numeric" })}
+            </p>
             {isLoadingHistory ? (
               <div className="text-center py-6 text-gray-400">
                 <p className="text-sm">Memuat riwayat...</p>
               </div>
             ) : absenceHistory.length === 0 ? (
-              <p className="text-gray-400 text-sm">Belum ada riwayat absensi.</p>
+              <p className="text-gray-400 text-sm">Belum ada riwayat absensi bulan ini.</p>
             ) : (
               absenceHistory.map((item, i) => (
                 <div key={i} className="dashboard-stat-card" style={{ animationDelay: `${0.3 + i * 0.05}s` }}>
@@ -620,18 +580,19 @@ function TaskItem({ task, onToggle, onDelete, onEdit }: { task: Task; onToggle: 
   );
 }
 
-function AbsenceItem({ date, status }: { date: string; status: "Hadir" | "Terlambat" | "Alpa" | "Sakit" | "Izin" }) {
+function AbsenceItem({ date, status }: { date: string; status: "Hadir" | "Terlambat" | "Alpa" | "Sakit" | "Izin" | "Libur" }) {
   const styles = {
     Hadir: "bg-green-100 text-green-700",
     Terlambat: "bg-yellow-100 text-yellow-700",
     Alpa: "bg-red-100 text-red-700",
     Sakit: "bg-blue-100 text-blue-700",
     Izin: "bg-purple-100 text-purple-700",
+    Libur: "bg-pink-100 text-pink-600",
   };
   return (
     <div className={`p-3 lg:p-4 rounded-xl mb-3 flex justify-between text-sm ${styles[status]}`}>
       <span>{date}</span>
-      <span className="font-medium">{status}</span>
+      <span className="font-medium">{status === "Libur" ? "Libur Nasional" : status}</span>
     </div>
   );
 }

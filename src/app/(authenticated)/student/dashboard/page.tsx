@@ -67,7 +67,7 @@ export default async function DashboardPage() {
   const getStatusLabel = (status: string) => statusMap[status] || status;
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
+    <div className="min-h-screen overflow-x-hidden bg-gray-100 p-6">
       <h1 className="text-2xl font-bold mb-1">Dashboard Siswa</h1>
       <p className="text-gray-500 mb-6">
         Selamat datang! Kelola kehadiran dan todo list Anda di sini.
@@ -91,6 +91,8 @@ export default async function DashboardPage() {
             <h2 className="font-semibold text-sm lg:text-base">Terlambat</h2>
             <span className="text-yellow-500 text-lg">●</span>
           </div>
+
+          
           <p className="text-2xl lg:text-3xl font-bold mt-1">{absensiStats.terlambat}</p>
           <p className="text-xs text-gray-400">Total</p>
         </div>
