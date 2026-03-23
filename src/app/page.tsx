@@ -3,7 +3,7 @@
 import { InputFloatingLabel } from "@/components/ui/input";
 import { login } from "@/lib/helpers/auth";
 import { LoginShcema } from "@/schema/auth.schema";
-import { LoginReq } from "@/type/auth.type";
+import { AuthReq } from "@/type/auth.type";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useRouter } from "next/navigation";
 import { SubmitHandler, useForm } from "react-hook-form";
@@ -14,11 +14,11 @@ export default function Home() {
     handleSubmit,
     register,
     formState: { errors },
-  } = useForm<LoginReq>({
+  } = useForm<AuthReq>({
     resolver: yupResolver(LoginShcema),
   });
 
-  const onSubmit: SubmitHandler<LoginReq> = async (payload: LoginReq) => {
+  const onSubmit: SubmitHandler<AuthReq> = async (payload: AuthReq) => {
     const res = await login(payload);
     if (res.success) {
       router.push("/");

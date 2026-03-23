@@ -6,15 +6,29 @@ export type RegularRes = {
 export type AuthRes = {
   success: boolean;
   message: string;
-  data: TokenData;
+  data: BasicToken;
 };
 
-export type TokenData = {
+export type BasicToken = {
   accessToken: string;
   refreshToken: string;
 };
 
-export type LoginReq = {
+export type AuthReq = {
   email: string;
   password: string;
+};
+
+export type ChangePasswordRes = {
+  success: boolean;
+  message: string;
+  data: ResetToken;
+};
+
+export type ResetToken = {
+  resetToken: string;
+};
+
+export type ChangePasswordReq = {
+  oldPassword: string
 };

@@ -1,3 +1,5 @@
+'use server'
+
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "./lib/helpers/jose";
 import { refresh } from "./lib/helpers/auth";
