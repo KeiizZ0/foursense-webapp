@@ -1,22 +1,22 @@
+"use client";
+
 import { Eye, EyeOff } from "lucide-react";
 import React, { useId, useState } from "react";
 
 interface InputFloatingLabel {
-  type?: "text" | "email" | "password";
-  placeholder?: string;
-  className?: string;
-  name?: string;
-  id?: string;
-  ref?: React.RefCallback<HTMLInputElement>;
-  onChange?: React.ChangeEventHandler<HTMLInputElement>;
-  onBlur?: React.FocusEventHandler<HTMLInputElement>;
+  type: "text" | "email" | "password";
+  placeholder: string;
   value?: string;
-  defaultValue?: string;
+  onClick?: React.MouseEventHandler<HTMLInputElement>;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 export const InputFloatingLabel: React.FC<InputFloatingLabel> = ({
   type,
   placeholder,
+  onChange,
+  onClick,
+  value,
   ...rest
 }) => {
   const id = useId();
@@ -30,13 +30,17 @@ export const InputFloatingLabel: React.FC<InputFloatingLabel> = ({
         type={currentType}
         id={id}
         placeholder=" "
+        name={placeholder}
+        onClick={onClick}
+        onChange={onChange}
+        value={value}
         className="block w-full border border-gray-300 peer p-3 rounded bg-transparent focus:border-blue-500 focus:outline-none"
         {...rest}
       />
 
       <label
         htmlFor={id}
-        className="absolute left-3 top-3 px-1 bg-base-100 text-gray-500 transition-all cursor-text
+        className="absolute left-3 top-3 px-1 bg-base-100 text-base-content/60 transition-all cursor-text
           peer-focus:-top-2 peer-focus:left-2 peer-focus:text-xs peer-focus:text-blue-500
           peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:left-2 peer-[:not(:placeholder-shown)]:text-xs"
       >
@@ -47,7 +51,7 @@ export const InputFloatingLabel: React.FC<InputFloatingLabel> = ({
         <button
           type="button"
           onClick={() => setShowPassword(!showPassword)}
-          className="absolute top-0 right-0 text-sm font-medium text-accent-content hover:text-blue-500 p-3 rounded-r"
+          className="absolute top-0 right-0 text-sm font-medium text-base-content hover:text-blue-500 p-3 rounded-r"
         >
           {showPassword ? <Eye size={24} /> : <EyeOff size={24} />}
         </button>

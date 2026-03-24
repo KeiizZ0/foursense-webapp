@@ -24,7 +24,7 @@ export default function Page({ params }: { params: Promise<{ resettoken: string 
       <InputFloatingLabel
         type="password"
         placeholder="Password"
-        value={value}
+        value={value as string}
         onChange={(e) => setValue(e.target.value)}
       />
       <button type="submit" className="btn btn-primary">

@@ -11,10 +11,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <div data-theme="light">
-        {children}
+        <div data-theme="light" className="w-screen h-screen">
+          {children}
         </div>
-        </body>
+      </body>
     </html>
   );
 }
