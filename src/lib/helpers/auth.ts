@@ -1,12 +1,10 @@
 // app/actions/auth.ts
 "use server";
 
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import { getCookie, setCookie, deleteCookie } from "./cookies";
-import { AuthRes, LoginReq } from "@/type/auth.type";
+import { AuthRes } from "@/type/auth.type";
 
-export async function login(body: LoginReq) {
+export async function login(body: { email: string; password: string }) {
   if (!body) {
     return { success: false, message: "Insert email and password!" };
   }
@@ -71,8 +69,4 @@ export async function logout() {
   // Delete cookies
   await deleteCookie("acctkn");
   await deleteCookie("rftkn");
-  
-  // Redirect to home - the client side will handle localStorage clearing
-  redirect("/");
 }
-
