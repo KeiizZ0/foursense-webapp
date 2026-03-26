@@ -1,198 +1,248 @@
-import { getWeeklyAbsensi } from "@/restApi/dashboardSiswa.api";
-import { getMyTodos } from "@/restApi/todo.api";
-import Link from "next/link";
+"use client";
 
-interface AbsensiData {
-  _count: { status: number };
-  status: string;
-}
+import { useState, useEffect } from 'react';
+import { getAllAbsencesNoFilter } from '@/restApi/absence.api';
+import type { DashboardData } from '@/type/dashboard.type';
+import { Loader2, AlertCircle, Users, UserX, Clock, Heart, TrendingUp, CheckCircle, XCircle } from 'lucide-react';
 
-interface TodoData {
-  id: number;
-  title: string;
-  status: "Normal" | "Urgent";
-  date?: string;
-  done: boolean;
-}
+export default function DashboardGuru() {
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-export default async function DashboardPage() {
-  let absensiData: AbsensiData[] = [];
-  let todos: TodoData[] = [];
-  
-  try {
-    const absensiResult = await getWeeklyAbsensi();
-    // Validasi dan normalisasi data absensi
-    let absensiArray: AbsensiData[] = [];
-    if (Array.isArray(absensiResult)) {
-      absensiArray = absensiResult;
-    } else if (absensiResult && typeof absensiResult === 'object') {
-      // Jika response berbentuk object dengan properti data/result
-      const data = (absensiResult as any).data || (absensiResult as any).result || [];
-      absensiArray = Array.isArray(data) ? data : [];
-    }
-    absensiData = absensiArray;
-  } catch (error) {
-    console.error("Error fetching absensi:", error);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const result = await getAllAbsencesNoFilter();
+        setData(result);
+      } catch (err) {
+        setError('Gagal memuat data kehadiran');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600 mr-2" />
+        <span>Memuat data dashboard...</span>
+      </div>
+    );
   }
 
-  try {
-    todos = await getMyTodos();
-  } catch (error) {
-    console.error("Error fetching todos:", error);
+  if (error || !data) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px] text-red-600">
+        <AlertCircle className="w-8 h-8 mr-2" />
+        {error || 'Tidak ada data kehadiran hari ini'}
+      </div>
+    );
   }
 
-  // Hitung statistik
-  const totalTugas = todos.length;
-  const tugasSelesai = todos.filter((t: TodoData) => t.done).length;
-  const tugasAktif = totalTugas - tugasSelesai;
-
-  // Hitung statistik absensi
-  const absensiStats = {
-    hadir: absensiData.find((a: AbsensiData) => a.status === "PRESENT")?._count?.status || 0,
-    terlambat: absensiData.find((a: AbsensiData) => a.status === "LATE")?._count?.status || 0,
-    sakit: absensiData.find((a: AbsensiData) => a.status === "SICK")?._count?.status || 0,
-    izin: absensiData.find((a: AbsensiData) => a.status === "PERMISSION")?._count?.status || 0,
-    alpha: absensiData.find((a: AbsensiData) => a.status === "ABSENT")?._count?.status || 0,
+  const statistik = {
+    hadir: data.totalPresent,
+    absen: data.totalAbsent,
+    terlambat: data.totalLate,
+    sakit: data.totalSick,
+    rata: data.averageAttendance,
   };
 
-  // Mapping 5 status yang mungkin
-  const statusMap: Record<string, string> = {
-    "PRESENT": "Hadir",
-    "LATE": "Terlambat",
-    "SICK": "Sakit",
-    "PERMISSION": "Izin",
-    "ABSENT": "Alpha"
-  };
+  const majors = ['RPL', 'TKJ', 'DKV', 'TOI', 'TAV', 'TITL'];
+  const dataJurusan = majors.map((jurusan) => {
+    const classes = Object.keys(data.byClass).filter((key) => key.startsWith(jurusan));
+    const total = classes.reduce((sum, key) => sum + (data.byClass[key]?.total || 0), 0);
+    const hadir = classes.reduce((sum, key) => sum + (data.byClass[key]?.present || 0), 0);
+    const absen = classes.reduce((sum, key) => sum + (data.byClass[key]?.absent || 0), 0);
+    const terlambat = classes.reduce((sum, key) => sum + (data.byClass[key]?.late || 0), 0);
+    return { jurusan, total, hadir, absen, terlambat };
+  }).filter((d) => d.total > 0);
 
-  const getStatusLabel = (status: string) => statusMap[status] || status;
+  const alertSiswa = data.alerts.slice(0, 6);
+
+  const persen = (hadir: number, total: number) =>
+    total > 0 ? Math.round((hadir / total) * 100) : 0;
+
+  const cardColors = {
+    hadir: 'from-green-50 to-emerald-50 border-green-100',
+    absen: 'from-red-50 to-rose-50 border-red-100',
+    terlambat: 'from-yellow-50 to-amber-50 border-yellow-100',
+    sakit: 'from-purple-50 to-violet-50 border-purple-100',
+    tingkatKehadiran: 'from-pink-50 to-rose-50 border-pink-100',
+  };
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-gray-100 p-6">
-      <h1 className="text-2xl font-bold mb-1">Dashboard Siswa</h1>
-      <p className="text-gray-500 mb-6">
-        Selamat datang! Kelola kehadiran dan todo list Anda di sini.
-      </p>
+    <div className="p-6 bg-blue-900/10 rounded-2xl min-h-screen ">
+      {/* Header */}
+      <div className="dashboard-stat-card mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">Dashboard Monitoring</h1>
+        <p className="text-gray-500 mt-1">Pantau kehadiran siswa SMKN 4 Bandung</p>
+      </div>
 
-      {/* CARD STATISTIK ABSENSI - 2 KOLOM DI MOBILE, 5 KOLOM DI DESKTOP */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 lg:gap-4 mb-6">
-        {/* Hadir */}
-        <div className="dashboard-stat-card bg-white rounded-xl shadow p-3 lg:p-4">
-          <div className="flex justify-between items-center">
-            <h2 className="font-semibold text-sm lg:text-base">Hadir</h2>
-            <span className="text-green-500 text-lg">●</span>
+      {/* Statistik Cards */}
+      <div className="grid md:grid-cols-5 gap-5 mb-6">
+        {/* Hadir Card */}
+        <div className={`dashboard-stat-card bg-gradient-to-br ${cardColors.hadir} rounded-2xl shadow-sm border p-5 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5`}>
+          <div className="flex items-center justify-between mb-3">
+            <div className="p-2 bg-green-100 rounded-xl">
+              <CheckCircle className="w-5 h-5 text-green-600" />
+            </div>
+            <span className="text-xs font-medium text-green-600 bg-green-100 px-2 py-1 rounded-full">Hari Ini</span>
           </div>
-          <p className="text-2xl lg:text-3xl font-bold mt-1">{absensiStats.hadir}</p>
-          <p className="text-xs text-gray-400">Total</p>
+          <h2 className="text-3xl font-bold text-gray-800">{statistik.hadir}</h2>
+          <p className="text-sm text-gray-600 mt-1">Siswa Hadir</p>
+          <div className="mt-3 flex items-center gap-1 text-xs text-green-600">
+            <TrendingUp className="w-3 h-3" />
+            <span>+{Math.round((statistik.hadir / (statistik.hadir + statistik.absen)) * 100)}% kehadiran</span>
+          </div>
         </div>
 
-        {/* Terlambat */}
-        <div className="dashboard-stat-card bg-white rounded-xl shadow p-3 lg:p-4">
-          <div className="flex justify-between items-center">
-            <h2 className="font-semibold text-sm lg:text-base">Terlambat</h2>
-            <span className="text-yellow-500 text-lg">●</span>
+        {/* Alpha/Absen Card */}
+        <div className={`dashboard-stat-card bg-gradient-to-br ${cardColors.absen} rounded-2xl shadow-sm border p-5 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5`}>
+          <div className="flex items-center justify-between mb-3">
+            <div className="p-2 bg-red-100 rounded-xl">
+              <XCircle className="w-5 h-5 text-red-600" />
+            </div>
+            <span className="text-xs font-medium text-red-600 bg-red-100 px-2 py-1 rounded-full">Hari Ini</span>
           </div>
-
-          
-          <p className="text-2xl lg:text-3xl font-bold mt-1">{absensiStats.terlambat}</p>
-          <p className="text-xs text-gray-400">Total</p>
+          <h2 className="text-3xl font-bold text-gray-800">{statistik.absen}</h2>
+          <p className="text-sm text-gray-600 mt-1">Siswa Alpha</p>
+          <div className="mt-3 h-1 w-full bg-red-100 rounded-full overflow-hidden">
+            <div className="h-full bg-red-500 rounded-full" style={{ width: `${(statistik.absen / (statistik.hadir + statistik.absen)) * 100}%` }}></div>
+          </div>
         </div>
 
-        {/* Sakit */}
-        <div className="dashboard-stat-card bg-white rounded-xl shadow p-3 lg:p-4">
-          <div className="flex justify-between items-center">
-            <h2 className="font-semibold text-sm lg:text-base">Sakit</h2>
-            <span className="text-blue-500 text-lg">●</span>
+        {/* Terlambat Card */}
+        <div className={`dashboard-stat-card bg-gradient-to-br ${cardColors.terlambat} rounded-2xl shadow-sm border p-5 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5`}>
+          <div className="flex items-center justify-between mb-3">
+            <div className="p-2 bg-yellow-100 rounded-xl">
+              <Clock className="w-5 h-5 text-yellow-600" />
+            </div>
+            <span className="text-xs font-medium text-yellow-600 bg-yellow-100 px-2 py-1 rounded-full">Hari Ini</span>
           </div>
-          <p className="text-2xl lg:text-3xl font-bold mt-1">{absensiStats.sakit}</p>
-          <p className="text-xs text-gray-400">Total</p>
+          <h2 className="text-3xl font-bold text-gray-800">{statistik.terlambat}</h2>
+          <p className="text-sm text-gray-600 mt-1">Siswa Terlambat</p>
         </div>
 
-        {/* Izin */}
-        <div className="dashboard-stat-card bg-white rounded-xl shadow p-3 lg:p-4">
-          <div className="flex justify-between items-center">
-            <h2 className="font-semibold text-sm lg:text-base">Izin</h2>
-            <span className="text-purple-500 text-lg">●</span>
+        {/* Sakit Card */}
+        <div className={`dashboard-stat-card bg-gradient-to-br ${cardColors.sakit} rounded-2xl shadow-sm border p-5 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5`}>
+          <div className="flex items-center justify-between mb-3">
+            <div className="p-2 bg-purple-100 rounded-xl">
+              <Heart className="w-5 h-5 text-purple-600" />
+            </div>
+            <span className="text-xs font-medium text-purple-600 bg-purple-100 px-2 py-1 rounded-full">Hari Ini</span>
           </div>
-          <p className="text-2xl lg:text-3xl font-bold mt-1">{absensiStats.izin}</p>
-          <p className="text-xs text-gray-400">Total</p>
+          <h2 className="text-3xl font-bold text-gray-800">{statistik.sakit}</h2>
+          <p className="text-sm text-gray-600 mt-1">Siswa Sakit</p>
         </div>
 
-        {/* Alpha */}
-        <div className="dashboard-stat-card bg-white rounded-xl shadow p-3 lg:p-4">
-          <div className="flex justify-between items-center">
-            <h2 className="font-semibold text-sm lg:text-base">Alpha</h2>
-            <span className="text-red-500 text-lg">●</span>
+        {/* Tingkat Kehadiran Card - PINK */}
+        <div className={`dashboard-stat-card bg-gradient-to-br ${cardColors.tingkatKehadiran} rounded-2xl shadow-sm border p-5 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5`}>
+          <div className="flex items-center justify-between mb-3">
+            <div className="p-2 bg-pink-100 rounded-xl">
+              <TrendingUp className="w-5 h-5 text-pink-600" />
+            </div>
+            <span className="text-xs font-medium text-pink-600 bg-pink-100 px-2 py-1 rounded-full">Hari Ini</span>
           </div>
-          <p className="text-2xl lg:text-3xl font-bold mt-1">{absensiStats.alpha}</p>
-          <p className="text-xs text-gray-400">Total</p>
+          <h2 className="text-3xl font-bold text-gray-800">{statistik.rata}%</h2>
+          <p className="text-sm text-gray-600 mt-1">Tingkat Kehadiran</p>
+          <div className="mt-3 flex items-center gap-2">
+            <div className="flex-1 h-1.5 bg-pink-100 rounded-full overflow-hidden">
+              <div className="h-full bg-pink-500 rounded-full" style={{ width: `${statistik.rata}%` }}></div>
+            </div>
+            <span className="text-xs text-gray-500">target 100%</span>
+          </div>
         </div>
       </div>
 
-      {/* AKSI CEPAT */}
-      <div className="dashboard-stat-card bg-white rounded-xl shadow p-5 mb-6">
-        <h2 className="font-semibold">Aksi Cepat</h2>
-        <p className="text-gray-400 text-sm mb-4">
-          Mulai dari sini untuk menyelesaikan requirements
-        </p>
-
-        <div className="flex gap-3">
-          <Link href="/student/absence" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-            Lihat Todo List
-          </Link>
-
-          <div className="flex gap-3">
-          <Link href="/student/absence?tab=absence" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-            Absensi 
-          </Link>
-          
-        </div>
+      {/* Tabel Jurusan */}
+      <div className="dashboard-stat-card bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+        <h2 className="font-semibold text-lg text-gray-800">Ringkasan Kehadiran Per Jurusan</h2>
+        <p className="text-gray-600/70 text-sm mb-5">Data kehadiran hari ini untuk semua jurusan</p>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="text-left border-b border-gray-100">
+                <th className="py-3 text-sm font-semibold text-gray-600">Jurusan</th>
+                <th className="py-3 text-sm font-semibold text-gray-600">Total</th>
+                <th className="py-3 text-sm font-semibold text-emerald-600">Hadir</th>
+                <th className="py-3 text-sm font-semibold text-rose-600">Absen</th>
+                <th className="py-3 text-sm font-semibold text-amber-600">Terlambat</th>
+                <th className="py-3 text-sm font-semibold text-gray-600">% Kehadiran</th>
+                </tr>
+            </thead>
+            <tbody>
+              {dataJurusan.map((d, i) => (
+                <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                  <td className="py-3 font-medium text-gray-800">{d.jurusan}</td>
+                  <td className="py-3 text-gray-600">{d.total}</td>
+                  <td className="py-3 text-emerald-600 font-medium">{d.hadir}</td>
+                  <td className="py-3 text-rose-600 font-medium">{d.absen}</td>
+                  <td className="py-3 text-amber-600 font-medium">{d.terlambat}</td>
+                  <td className="py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                          style={{ width: `${persen(d.hadir, d.total)}%` }}
+                        ></div>
+                      </div>
+                      <span className="text-sm font-medium text-gray-700 min-w-[45px]">{persen(d.hadir, d.total)}%</span>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
-      {/* TODO LIST */}
-      <div className="dashboard-stat-card bg-white rounded-xl shadow p-4">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="font-semibold">Todo List Anda</h2>
-          <div className="text-sm text-gray-500">
-            {tugasSelesai} / {totalTugas} selesai
-          </div>
+      {/* Alert Siswa */}
+      <div className="dashboard-stat-card bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <div className="flex items-center gap-2 mb-2">
+          <div className="w-2 h-2 bg-rose-500 rounded-full animate-pulse"></div>
+          <h2 className="font-semibold text-lg text-gray-800">Alert - Siswa Absen dan Terlambat</h2>
         </div>
-
-        {todos.length === 0 ? (
-          <p className="text-gray-400 text-center py-4">Belum ada tugas</p>
-        ) : (
-          <div className="grid md:grid-cols-2 gap-3">
-            {todos.slice(0, 6).map((todo: TodoData) => (
-              <div
-                key={todo.id}
-                className={`border rounded-lg p-3 flex justify-between items-center ${
-                  todo.done ? "bg-gray-50" : ""
-                }`}
-              >
-                <div>
-                  <p className={`font-semibold capitalize ${todo.done ? "line-through text-gray-400" : ""}`}>
-                    {todo.title}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    {todo.date}
-                  </p>
+        <p className="text-gray-400 text-sm mb-5">Siswa yang tidak hadir atau terlambat hari ini</p>
+        
+        <div className="grid gap-3">
+          {alertSiswa.map((s, i) => (
+            <div
+              key={i}
+              className={`p-4 rounded-xl border transition-all duration-200 hover:shadow-sm ${
+                s.status === 'Absen'
+                  ? 'bg-rose-50/50 border-rose-100 hover:bg-rose-50'
+                  : 'bg-amber-50/50 border-amber-100 hover:bg-amber-50'
+              }`}
+            >
+              <div className="flex justify-between items-center">
+                <div className="flex-1">
+                  <p className="font-medium text-gray-800">{s.name}</p>
+                  <p className="text-sm text-gray-500 mt-0.5">{s.class}</p>
                 </div>
-
-                {todo.done ? (
-                  <span className="text-green-500 text-sm">Selesai</span>
-                ) : (
-                  <span className="text-red-500 text-sm">Pending</span>
-                )}
+                <span
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
+                    s.status === 'Absen'
+                      ? 'bg-rose-100 text-rose-700'
+                      : 'bg-amber-100 text-amber-700'
+                  }`}
+                >
+                  {s.status === 'Absen' ? '❌ Absen' : '⏰ Terlambat'}
+                </span>
               </div>
-            ))}
-          </div>
-        )}
-
-        {todos.length > 6 && (
-          <div className="mt-4 text-center">
-            <Link href="/student/todo" className="text-blue-600 hover:underline text-sm">
-              Lihat semua {todos.length} tugas →
-            </Link>
+            </div>
+          ))}
+        </div>
+        
+        {alertSiswa.length === 0 && (
+          <div className="text-center py-8">
+            <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Users className="w-8 h-8 text-emerald-500" />
+            </div>
+            <p className="text-gray-500">Semua siswa hadir tepat waktu! ✨</p>
           </div>
         )}
       </div>
