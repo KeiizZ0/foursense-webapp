@@ -9,6 +9,8 @@ export async function login(body: AuthReq) {
     return { success: false, message: "Insert email and password!" };
   }
 
+
+  
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
     method: "POST",
     headers: {
@@ -28,6 +30,7 @@ export async function login(body: AuthReq) {
 
   return { success: false, message: "Invalid email or password!" };
 }
+
 
 export async function refresh(refresh: string) {
   const refresh_token = await getCookie("rftkn");
