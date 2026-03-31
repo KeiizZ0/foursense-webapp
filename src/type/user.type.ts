@@ -14,11 +14,21 @@ export enum Role {
 export type UserData = {
   id: string;
   name: string;
-  email: string;
   role: "unregistered" | "student" | "teacher" | "admin";
+  email: string;
+  slug: string;
   nis?: string;
   kelas?: string;
-  studentClasses: studentClasses
+  student?: {
+    id: string;
+    class: {
+      id: string;
+      academicYear: string;
+      major: string;
+      classNumber: number;
+    };
+  };
+  studentClasses: studentClasses;
 };
 
 export type studentClasses = {

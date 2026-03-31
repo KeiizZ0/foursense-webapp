@@ -1,5 +1,6 @@
 "use client";
 
+
 type Task = {
   id: string;
   title: string;
@@ -11,15 +12,21 @@ type Task = {
 
 type AbsenceRecord = {
   date: string;
-  status: "Hadir" | "Terlambat" | "Alpa" | "Sakit" | "Izin" | "Libur";
+  status: "Hadir" | "Terlambat" | "Alpa" | "Sakit" | "Izin";
 };
 
 import { useState, useEffect } from "react";
+import React from 'react';
 import { createTodo, getMyTodos, markAsDone, deleteTodo, updateTodo } from "@/restApi/todo.api";
 import { checkIn } from "@/restApi/absence.api";
 import { useUserStorage } from "@/store/user.store";
 import { ApiClient } from "@/lib/helpers/axios";
 import { useSearchParams } from "next/navigation";
+import { 
+  CheckCircle, XCircle, Clock, Calendar, Plus, Edit2, Trash2, 
+  TrendingUp, UserCheck, UserX, AlertCircle, BookOpen, Heart,
+  ChevronRight, ChevronLeft, X, Check
+} from "lucide-react";
 
 export default function AbsencePage() {
   const searchParams = useSearchParams();
@@ -68,7 +75,10 @@ export default function AbsencePage() {
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
 
-  const sudahAbsenHariIni = absenceHistory.some((a) => a.date === today);
+  const dayOfWeek = now.getDay();
+  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
+  const sudahAbsenHariIni = absenceHistory.some((a) => a.date === today && a.status !== "Alpa");
 
   function getStatusAbsen(): "Hadir" | "Terlambat" | "Alpa" {
     const totalMenit = now.getHours() * 60 + now.getMinutes();
@@ -92,7 +102,7 @@ export default function AbsencePage() {
 
   const statusAbsenSekarang = getStatusAbsen();
   const sudahLewatBatas = statusAbsenSekarang === "Alpa";
-  const absenDisabled = tasks.length === 0 || sudahAbsenHariIni || sudahLewatBatas;
+  const absenDisabled = tasks.length === 0 || sudahAbsenHariIni || sudahLewatBatas || isWeekend;
 
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -103,11 +113,11 @@ export default function AbsencePage() {
         const absenSection = document.getElementById('absen-section');
         if (absenSection) absenSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 300);
-      if (openModal === 'true' && !sudahAbsenHariIni && !sudahLewatBatas && tasks.length > 0) {
+      if (openModal === 'true' && !sudahAbsenHariIni && !sudahLewatBatas && !isWeekend && tasks.length > 0) {
         setTimeout(() => setShowAbsenModal(true), 500);
       }
     }
-  }, [searchParams, sudahAbsenHariIni, sudahLewatBatas, tasks.length]);
+  }, [searchParams, sudahAbsenHariIni, sudahLewatBatas, isWeekend, tasks.length]);
 
   async function fetchTodos() {
     setIsLoadingTasks(true);
@@ -127,22 +137,9 @@ export default function AbsencePage() {
       const studentId = (myData as any)?.student?.id;
       if (!studentId) return;
 
-      const [response, holidayList] = await Promise.all([
-        ApiClient.get("/api/absen/get-all", {
-          params: { student: studentId, limit: 100 },
-        }),
-        fetch("https://raw.githubusercontent.com/gerinsp/dayoff-API/refs/heads/master/data/2026.json")
-          .then((r) => r.json())
-          .catch(() => []),
-      ]);
-
-      // Convert array holiday ke map untuk mudah dicek
-      const holidayMap: Record<string, string> = {};
-      if (Array.isArray(holidayList)) {
-        holidayList.forEach((h: any) => {
-          if (h.tanggal) holidayMap[h.tanggal] = h.keterangan;
-        });
-      }
+      const response = await ApiClient.get("/api/absen/get-all", {
+        params: { student: studentId, limit: 100 },
+      });
 
       const all = response.data?.data?.absences || [];
       const userName = myData?.name;
@@ -167,28 +164,28 @@ export default function AbsencePage() {
         })
         .map(({ _raw, ...rest }: any) => rest);
 
-      const dayOfWeek = now.getDay();
-      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-      const isHoliday = holidayMap[todayISO] !== undefined;
+      const nowLocal = new Date();
+      const dayOfWeekLocal = nowLocal.getDay();
+      const isWeekendLocal = dayOfWeekLocal === 0 || dayOfWeekLocal === 6;
+      const totalMenitLocal = nowLocal.getHours() * 60 + nowLocal.getMinutes();
+      const lewatBatasLocal = totalMenitLocal >= 10 * 60;
 
-      const sudahAdaHariIni = mapped.some((a) => a.date === today);
+      const todayLocal = nowLocal.toLocaleDateString("id-ID", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
 
-      if (!sudahAdaHariIni) {
-        if (isWeekend || isHoliday) {
-          mapped.unshift({ date: today, status: "Libur" });
-        } else if (sudahLewatBatas) {
-          mapped.unshift({ date: today, status: "Alpa" });
-        }
+      const sudahAdaHariIni = mapped.some((a) => a.date === todayLocal);
+
+      if (!sudahAdaHariIni && lewatBatasLocal && !isWeekendLocal) {
+        mapped.unshift({ date: todayLocal, status: "Alpa" });
       }
 
-      // Deduplikasi
       const unique = mapped.filter((item, index, self) =>
         index === self.findIndex((t) => t.date === item.date)
       );
-
-      // Sort terbaru di atas
       unique.sort((a, b) => parseDate(b.date).getTime() - parseDate(a.date).getTime());
-
       setAbsenceHistory(unique);
     } catch (err) {
       console.error("Gagal fetch history absensi:", err);
@@ -202,10 +199,20 @@ export default function AbsencePage() {
 
   async function handleToggle(id: string) {
     try {
+      const task = tasks.find(t => t.id === id);
+      const wasDone = task?.done;
+      
       await markAsDone(id);
       setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
+      
+      if (wasDone) {
+        showToast("✓ Tugas ditandai belum selesai");
+      } else {
+        showToast("✓ Tugas selesai!");
+      }
     } catch (err) {
       console.error("Gagal update status:", err);
+      showToast("❌ Gagal mengupdate status tugas");
     }
   }
 
@@ -213,8 +220,10 @@ export default function AbsencePage() {
     try {
       await deleteTodo(id);
       setTasks((prev) => prev.filter((t) => t.id !== id));
+      showToast("🗑 Tugas berhasil dihapus");
     } catch (err) {
       console.error("Gagal hapus tugas:", err);
+      showToast("❌ Gagal menghapus tugas");
     }
   }
 
@@ -296,7 +305,12 @@ export default function AbsencePage() {
       setShowAbsenModal(false);
       showToast("✓ Absensi berhasil dicatat!");
     } catch (err: any) {
-      setAbsenError(err.message ?? "Gagal melakukan absensi");
+      const msg = err?.response?.data?.message ?? err.message ?? "";
+      if (msg.toLowerCase().includes("weekend")) {
+        setAbsenError("❌ Absensi tidak tersedia di hari weekend.");
+      } else {
+        setAbsenError(msg || "Gagal melakukan absensi");
+      }
     } finally {
       setIsAbsenLoading(false);
     }
@@ -305,127 +319,230 @@ export default function AbsencePage() {
   const statusHariIni = absenceHistory.find((a) => a.date === today)?.status;
 
   return (
-    <div className="p-4 lg:p-8 bg-gray-50 min-h-screen overflow-x-hidden">
-
+    <div className="min-h-screen bg-blue-900/10 rounded-2xl p-4 md:p-6 lg:p-8">
+      
+      {/* Toast Notification */}
       {toast.visible && (
-        <div className="fixed bottom-6 right-6 z-50 bg-green-500 text-white px-5 py-3 rounded-xl shadow-lg text-sm font-medium">
-          {toast.message}
+        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-5 duration-300">
+          <div className="bg-gray-900 rounded-2xl shadow-2xl px-5 py-4 min-w-[280px] animate-bounce-in">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center">
+                  <CheckCircle className="w-5 h-5 text-green-400" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-white text-sm">Berhasil!</p>
+                <p className="text-gray-300 text-xs mt-0.5">{toast.message}</p>
+              </div>
+              <button 
+                onClick={() => setToast({ message: "", visible: false })}
+                className="flex-shrink-0 text-gray-400 hover:text-gray-300 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
-      <h1 className="text-xl lg:text-2xl font-semibold mb-1">Tugas & Absensi</h1>
-      <p className="text-gray-500 text-sm lg:text-base mb-4 lg:mb-6">
-        Selesaikan tugas Anda terlebih dahulu sebelum dapat melakukan absensi
-      </p>
+      {/* Header */}
+      <div className="mb-8 animate-slide-down">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-2">
+          <Calendar className="w-7 h-7 text-blue-600 animate-pulse-subtle" />
+          Tugas & Absensi
+        </h1>
+        <p className="text-gray-500 text-sm md:text-base mt-2 ml-1">
+          Selesaikan tugas Anda terlebih dahulu sebelum dapat melakukan absensi
+        </p>
+      </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-4 lg:mb-6">
-        <div className="dashboard-stat-card">
-          <StatCard title="Tugas Tertunda" value={pending.length.toString()} color="red" />
+      {/* Stat Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="dashboard-stat-card bg-white rounded-2xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-all duration-300 hover:scale-105">
+          <div className="flex items-center justify-between mb-2">
+            <div className="p-2 bg-red-100 rounded-xl">
+              <Clock className="w-5 h-5 text-red-500" />
+            </div>
+            <span className="text-2xl font-bold text-gray-800">{pending.length}</span>
+          </div>
+          <p className="text-sm text-gray-600">Tugas Tertunda</p>
         </div>
-        <div className="dashboard-stat-card">
-          <StatCard title="Tugas Selesai" value={completed.length.toString()} color="green" />
+        
+        <div className="dashboard-stat-card bg-white rounded-2xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-all duration-300 hover:scale-105">
+          <div className="flex items-center justify-between mb-2">
+            <div className="p-2 bg-green-100 rounded-xl">
+              <CheckCircle className="w-5 h-5 text-green-500" />
+            </div>
+            <span className="text-2xl font-bold text-gray-800">{completed.length}</span>
+          </div>
+          <p className="text-sm text-gray-600">Tugas Selesai</p>
         </div>
-        <div className="dashboard-stat-card">
-          <StatCard
-            title="Status Absensi"
-            value={statusHariIni ?? "-"}
-            color={statusHariIni === "Hadir" ? "green" : statusHariIni === "Terlambat" ? "blue" : statusHariIni === "Alpa" ? "red" : "blue"}
-          />
+        
+        <div className="dashboard-stat-card bg-white rounded-2xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-all duration-300 hover:scale-105">
+          <div className="flex items-center justify-between mb-2">
+            <div className={`p-2 rounded-xl ${
+              statusHariIni === "Hadir" ? "bg-green-100" : 
+              statusHariIni === "Terlambat" ? "bg-yellow-100" : 
+              statusHariIni === "Alpa" ? "bg-red-100" : "bg-blue-100"
+            }`}>
+              {statusHariIni === "Hadir" && <CheckCircle className="w-5 h-5 text-green-500" />}
+              {statusHariIni === "Terlambat" && <Clock className="w-5 h-5 text-yellow-500" />}
+              {statusHariIni === "Alpa" && <XCircle className="w-5 h-5 text-red-500" />}
+              {statusHariIni === "Sakit" && <Heart className="w-5 h-5 text-blue-500" />}
+              {statusHariIni === "Izin" && <BookOpen className="w-5 h-5 text-purple-500" />}
+              {!statusHariIni && <AlertCircle className="w-5 h-5 text-gray-400" />}
+            </div>
+            <span className="text-2xl font-bold text-gray-800">{statusHariIni ?? "-"}</span>
+          </div>
+          <p className="text-sm text-gray-600">Status Absensi</p>
         </div>
-        <div className="dashboard-stat-card">
-          <StatCard
-            title="Progress"
-            value={tasks.length > 0 ? `${Math.round((completed.length / tasks.length) * 100)}%` : "0%"}
-            color="purple"
-          />
+        
+        <div className="dashboard-stat-card bg-white rounded-2xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-all duration-300 hover:scale-105">
+          <div className="flex items-center justify-between mb-2">
+            <div className="p-2 bg-purple-100 rounded-xl">
+              <TrendingUp className="w-5 h-5 text-purple-500" />
+            </div>
+            <span className="text-2xl font-bold text-gray-800">
+              {tasks.length > 0 ? `${Math.round((completed.length / tasks.length) * 100)}%` : "0%"}
+            </span>
+          </div>
+          <p className="text-sm text-gray-600">Progress</p>
+          <div className="mt-2 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-purple-500 rounded-full transition-all duration-500"
+              style={{ width: tasks.length > 0 ? `${(completed.length / tasks.length) * 100}%` : "0%" }}
+            ></div>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:gap-4 mb-4">
-        <div className="dashboard-stat-card">
-          <button onClick={() => setActiveTab("tasks")} className={`w-full py-2 rounded-xl font-medium text-sm lg:text-base ${activeTab === "tasks" ? "bg-white shadow" : "bg-gray-100 text-gray-400"}`}>
-            Tugas ({pending.length})
-          </button>
-        </div>
-        <div className="dashboard-stat-card">
-          <button onClick={() => setActiveTab("absence")} className={`w-full py-2 rounded-xl font-medium text-sm lg:text-base ${activeTab === "absence" ? "bg-white shadow" : "bg-gray-100 text-gray-400"}`}>
-            Absensi
-          </button>
-        </div>
-      </div>
-
-      <div className="dashboard-stat-card">
-        <button onClick={() => setShowModal(true)} className="w-full bg-blue-600 text-white py-2 rounded mb-4 lg:mb-6 text-sm lg:text-base">
-          + Tambah Tugas Baru
+      {/* Tab Buttons */}
+      <div className="flex gap-3 mb-6">
+        <button
+          onClick={() => setActiveTab("tasks")}
+          className={`flex-1 py-3 rounded-xl font-medium text-sm md:text-base transition-all duration-300 transform hover:scale-105 ${
+            activeTab === "tasks"
+              ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
+              : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+          }`}
+        >
+          Tugas ({pending.length})
+        </button>
+        <button
+          onClick={() => setActiveTab("absence")}
+          className={`flex-1 py-3 rounded-xl font-medium text-sm md:text-base transition-all duration-300 transform hover:scale-105 ${
+            activeTab === "absence"
+              ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
+              : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+          }`}
+        >
+          Absensi
         </button>
       </div>
 
-      {/* Modal Tambah */}
+      {/* Add Task Button */}
+      <button
+        onClick={() => setShowModal(true)}
+        className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white py-3 rounded-xl mb-6 text-sm md:text-base transition-all duration-300 shadow-md hover:shadow-lg flex items-center justify-center gap-2 transform hover:scale-105 active:scale-95"
+      >
+        <Plus className="w-4 h-4" />
+        Tambah Tugas Baru
+      </button>
+
+      {/* Modals with enhanced animations */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-2xl p-5 lg:p-6 w-full max-w-md shadow-xl">
-            <h2 className="text-lg font-semibold mb-4">Tambah Tugas Baru</h2>
-            {error && <p className="text-red-500 text-sm mb-3 bg-red-50 p-2 rounded">{error}</p>}
-            <div className="space-y-3">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4 animate-fade-in">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl animate-modal-slide-up">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-800">Tambah Tugas Baru</h2>
+              <button onClick={() => { setShowModal(false); setError(""); }} className="text-gray-400 hover:text-gray-600 transition-transform hover:scale-110">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            {error && <p className="text-red-500 text-sm mb-3 bg-red-50 p-2 rounded-lg animate-shake">{error}</p>}
+            <div className="space-y-4">
               <div>
-                <label className="text-sm text-gray-500">Judul Tugas</label>
-                <input type="text" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Contoh: Kerjakan PR Matematika" className="w-full border rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Judul Tugas</label>
+                <input 
+                  type="text" 
+                  value={newTitle} 
+                  onChange={(e) => setNewTitle(e.target.value)} 
+                  placeholder="Contoh: Kerjakan PR Matematika" 
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200"
+                />
               </div>
               <div>
-                <label className="text-sm text-gray-500">Batas Waktu</label>
-                <input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} min={todayISO} className="w-full border rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Batas Waktu</label>
+                <input 
+                  type="date" 
+                  value={newDate} 
+                  onChange={(e) => setNewDate(e.target.value)} 
+                  min={todayISO} 
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200"
+                />
               </div>
             </div>
-            <div className="flex gap-3 mt-5">
-              <button onClick={() => { setShowModal(false); setError(""); }} className="flex-1 py-2 rounded-lg border text-gray-500 hover:bg-gray-50 text-sm">Batal</button>
-              <button onClick={handleAddTask} disabled={isLoading} className="flex-1 py-2 rounded-lg bg-blue-600 text-white disabled:opacity-50 text-sm">{isLoading ? "Menyimpan..." : "Simpan"}</button>
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => { setShowModal(false); setError(""); }} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-all transform hover:scale-105">Batal</button>
+              <button onClick={handleAddTask} disabled={isLoading} className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 transition-all transform hover:scale-105 active:scale-95">{isLoading ? "Menyimpan..." : "Simpan"}</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal Edit */}
+      {/* Edit Modal */}
       {showEditModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-2xl p-5 lg:p-6 w-full max-w-md shadow-xl">
-            <h2 className="text-lg font-semibold mb-4">Edit Tugas</h2>
-            {editError && <p className="text-red-500 text-sm mb-3 bg-red-50 p-2 rounded">{editError}</p>}
-            <div className="space-y-3">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4 animate-fade-in">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl animate-modal-slide-up">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-800">Edit Tugas</h2>
+              <button onClick={() => { setShowEditModal(false); setEditTask(null); }} className="text-gray-400 hover:text-gray-600 transition-transform hover:scale-110">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            {editError && <p className="text-red-500 text-sm mb-3 bg-red-50 p-2 rounded-lg animate-shake">{editError}</p>}
+            <div className="space-y-4">
               <div>
-                <label className="text-sm text-gray-500">Judul Tugas</label>
-                <input type="text" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="w-full border rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Judul Tugas</label>
+                <input type="text" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-200" />
               </div>
               <div>
-                <label className="text-sm text-gray-500">Deskripsi</label>
-                <input type="text" value={editDescription} onChange={(e) => setEditDescription(e.target.value)} placeholder="Opsional" className="w-full border rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Deskripsi</label>
+                <input type="text" value={editDescription} onChange={(e) => setEditDescription(e.target.value)} placeholder="Opsional" className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-200" />
               </div>
               <div>
-                <label className="text-sm text-gray-500">Batas Waktu</label>
-                <input type="date" value={editDeadline} onChange={(e) => setEditDeadline(e.target.value)} min={todayISO} className="w-full border rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Batas Waktu</label>
+                <input type="date" value={editDeadline} onChange={(e) => setEditDeadline(e.target.value)} min={todayISO} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-200" />
               </div>
             </div>
-            <div className="flex gap-3 mt-5">
-              <button onClick={() => { setShowEditModal(false); setEditTask(null); }} className="flex-1 py-2 rounded-lg border text-gray-500 hover:bg-gray-50 text-sm">Batal</button>
-              <button onClick={handleSaveEdit} disabled={isEditLoading} className="flex-1 py-2 rounded-lg bg-blue-600 text-white disabled:opacity-50 text-sm">{isEditLoading ? "Menyimpan..." : "Simpan"}</button>
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => { setShowEditModal(false); setEditTask(null); }} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-all transform hover:scale-105">Batal</button>
+              <button onClick={handleSaveEdit} disabled={isEditLoading} className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 transition-all transform hover:scale-105 active:scale-95">{isEditLoading ? "Menyimpan..." : "Simpan"}</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal Absen */}
+      {/* Absen Modal */}
       {showAbsenModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-2xl p-5 lg:p-6 w-full max-w-sm shadow-xl text-center">
-            <div className="text-5xl mb-4">📋</div>
-            <h2 className="text-lg font-semibold mb-1">Konfirmasi Absensi</h2>
-            <p className="text-gray-500 text-sm mb-3">Apakah kamu yakin ingin melakukan absensi hari ini?</p>
-            <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium mb-4 ${statusAbsenSekarang === "Hadir" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4 animate-fade-in">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl text-center animate-modal-slide-up">
+            <div className="text-6xl mb-4 animate-bounce-subtle">📋</div>
+            <h2 className="text-xl font-bold mb-2 text-gray-800">Konfirmasi Absensi</h2>
+            <p className="text-gray-500 text-sm mb-4">Apakah kamu yakin ingin melakukan absensi hari ini?</p>
+            <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium mb-5 ${
+              statusAbsenSekarang === "Hadir" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
+            }`}>
+              {statusAbsenSekarang === "Hadir" ? <CheckCircle className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
               Status: {statusAbsenSekarang}
             </div>
-            {absenError && <p className="text-red-500 text-sm mb-4 bg-red-50 p-2 rounded">{absenError}</p>}
+            {absenError && <p className="text-red-500 text-sm mb-4 bg-red-50 p-2 rounded-lg animate-shake">{absenError}</p>}
             <div className="flex gap-3">
-              <button onClick={() => { setShowAbsenModal(false); setAbsenError(""); }} className="flex-1 py-2 rounded-lg border text-gray-500 hover:bg-gray-50 text-sm">Batal</button>
-              <button onClick={handleAbsen} disabled={isAbsenLoading} className={`flex-1 py-2 rounded-lg text-white disabled:opacity-50 text-sm ${statusAbsenSekarang === "Hadir" ? "bg-green-600" : "bg-yellow-500"}`}>
+              <button onClick={() => { setShowAbsenModal(false); setAbsenError(""); }} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-all transform hover:scale-105">Batal</button>
+              <button onClick={handleAbsen} disabled={isAbsenLoading} className={`flex-1 py-2.5 rounded-xl text-white disabled:opacity-50 transition-all transform hover:scale-105 active:scale-95 ${
+                statusAbsenSekarang === "Hadir" ? "bg-green-600 hover:bg-green-700" : "bg-yellow-500 hover:bg-yellow-600"
+              }`}>
                 {isAbsenLoading ? "Memproses..." : "Ya, Absen Sekarang"}
               </button>
             </div>
@@ -433,115 +550,156 @@ export default function AbsencePage() {
         </div>
       )}
 
-      {/* Tab Tugas */}
+      {/* Tasks Tab */}
       {activeTab === "tasks" && (
-        <>
+        <div className="space-y-6">
           {isLoadingTasks ? (
-            <div className="text-center py-10 text-gray-400">
-              <p className="text-2xl mb-2">⏳</p>
-              <p className="text-sm">Memuat tugas...</p>
+            <div className="text-center py-12">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <p className="text-gray-500 mt-3">Memuat tugas...</p>
             </div>
           ) : (
             <>
-              <h2 className="font-semibold mb-3 text-sm lg:text-base">Tugas Tertunda</h2>
-              {pending.length === 0 && <p className="text-gray-400 text-sm mb-4">Tidak ada tugas tertunda.</p>}
-              {pending.map((task, index) => (
-                <div key={task.id} className="dashboard-stat-card" style={{ animationDelay: `${0.2 + index * 0.05}s` }}>
-                  <TaskItem task={task} onToggle={handleToggle} onDelete={handleDelete} onEdit={handleOpenEdit} />
-                </div>
-              ))}
-              <h2 className="font-semibold mt-6 mb-3 text-sm lg:text-base">Tugas Selesai</h2>
-              {completed.length === 0 && <p className="text-gray-400 text-sm">Belum ada tugas selesai.</p>}
-              {completed.map((task, index) => (
-                <div key={task.id} className="dashboard-stat-card" style={{ animationDelay: `${0.4 + index * 0.05}s` }}>
-                  <TaskItem task={task} onToggle={handleToggle} onDelete={handleDelete} onEdit={handleOpenEdit} />
-                </div>
-              ))}
+              <div>
+                <h2 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-orange-500 animate-pulse-subtle" />
+                  Tugas Tertunda
+                </h2>
+                {pending.length === 0 && (
+                  <div className="bg-gray-50 rounded-xl p-8 text-center animate-fade-in">
+                    <p className="text-gray-400">Tidak ada tugas tertunda.</p>
+                  </div>
+                )}
+                {pending.map((task, index) => (
+                  <div key={task.id} className="dashboard-stat-card" style={{ animationDelay: `${0.2 + index * 0.05}s` }}>
+                    <TaskItem task={task} onToggle={handleToggle} onDelete={handleDelete} onEdit={handleOpenEdit} />
+                  </div>
+                ))}
+              </div>
+              
+              <div>
+                <h2 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-500 animate-pulse-subtle" />
+                  Tugas Selesai
+                </h2>
+                {completed.length === 0 && (
+                  <div className="bg-gray-50 rounded-xl p-8 text-center animate-fade-in">
+                    <p className="text-gray-400"> Belum ada tugas selesai.</p>
+                  </div>
+                )}
+                {completed.map((task, index) => (
+                  <div key={task.id} className="dashboard-stat-card" style={{ animationDelay: `${0.4 + index * 0.05}s` }}>
+                    <TaskItem task={task} onToggle={handleToggle} onDelete={handleDelete} onEdit={handleOpenEdit} />
+                  </div>
+                ))}
+              </div>
             </>
           )}
-        </>
+        </div>
       )}
 
-      {/* Tab Absensi */}
+      {/* Absence Tab */}
       {activeTab === "absence" && (
-        <div id="absen-section" className="space-y-4 lg:space-y-6">
-          <div className="dashboard-stat-card">
-            <div className="border rounded-xl p-4 lg:p-6 bg-blue-50">
-              <h3 className="font-semibold text-sm lg:text-base">Absen Hari Ini</h3>
-              <p className="text-sm text-gray-500 mb-4">
-                {now.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+        <div id="absen-section" className="space-y-6">
+          {/* Today's Attendance Card */}
+          <div className="dashboard-stat-card bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all duration-300">
+            <h3 className="font-semibold text-gray-800 mb-1 flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-blue-600" />
+              Absen Hari Ini
+            </h3>
+            <p className="text-sm text-gray-500 mb-4">
+              {now.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+            </p>
+
+            {isWeekend && (
+              <div className="bg-gray-100 text-gray-600 p-4 rounded-xl mb-4 text-sm flex items-center gap-2 animate-fade-in">
+                <span>😴</span> Hari ini hari libur weekend — absensi tidak tersedia!
+              </div>
+            )}
+
+            {!isWeekend && tasks.length === 0 && !sudahLewatBatas && (
+              <div className="bg-yellow-50 text-yellow-700 p-4 rounded-xl mb-4 text-sm border border-yellow-200 animate-fade-in">
+                <p className="font-medium mb-2">⚠️ Tombol Absensi Dinonaktifkan</p>
+                <p className="text-sm">Kamu belum input tugas apapun. Tambahkan minimal 1 tugas terlebih dahulu.</p>
+                <button onClick={() => { setActiveTab("tasks"); setShowModal(true); }} className="mt-3 text-blue-600 hover:text-blue-700 text-sm font-medium underline transition-all hover:scale-105">+ Tambah tugas sekarang</button>
+              </div>
+            )}
+
+            {!isWeekend && sudahLewatBatas && (
+              <div className="bg-red-50 text-red-700 p-4 rounded-xl mb-4 text-sm border border-red-200 flex items-center gap-2 animate-fade-in">
+                <XCircle className="w-5 h-5" /> Waktu absensi sudah habis!
+              </div>
+            )}
+
+            {!isWeekend && statusAbsenSekarang === "Terlambat" && !sudahAbsenHariIni && (
+              <div className="bg-yellow-50 text-yellow-700 p-4 rounded-xl mb-4 text-sm border border-yellow-200 animate-fade-in">
+                <p className="font-medium">⚠️ Kamu akan tercatat <strong>Terlambat</strong> jika melakukan absen sekarang.</p>
+                <p className="text-sm mt-1">Batas hadir sudah lewat (sebelum jam 07:00 untuk hadir, sebelum jam 10:00 untuk tidak terlambat)</p>
+              </div>
+            )}
+
+            {sudahAbsenHariIni && (
+              <div className={`p-4 rounded-xl mb-4 text-sm border animate-fade-in ${
+                statusHariIni === "Hadir" ? "bg-green-50 text-green-700 border-green-200" :
+                statusHariIni === "Terlambat" ? "bg-yellow-50 text-yellow-700 border-yellow-200" :
+                statusHariIni === "Sakit" ? "bg-blue-50 text-blue-700 border-blue-200" :
+                statusHariIni === "Izin" ? "bg-purple-50 text-purple-700 border-purple-200" :
+                "bg-red-50 text-red-700 border-red-200"
+              }`}>
+                {statusHariIni === "Hadir" && "✓ Kamu sudah absen hari ini — Hadir!"}
+                {statusHariIni === "Terlambat" && "⚠ Kamu sudah absen hari ini — Terlambat."}
+                {statusHariIni === "Sakit" && "Kamu tercatat Sakit hari ini."}
+                {statusHariIni === "Izin" && "Kamu tercatat Izin hari ini."}
+                {statusHariIni === "Alpa" && "❌ Kamu sudah tercatat Alpa hari ini."}
+              </div>
+            )}
+
+            <button
+              disabled={absenDisabled}
+              onClick={() => !absenDisabled && setShowAbsenModal(true)}
+              className={`w-28 h-28 lg:w-32 lg:h-32 rounded-full flex flex-col items-center justify-center mx-auto shadow-xl border-4 transition-all duration-300 ${
+                absenDisabled ? "bg-gray-200 text-gray-400 cursor-not-allowed border-gray-300" : 
+                statusAbsenSekarang === "Terlambat" ? "bg-gradient-to-br from-yellow-400 to-yellow-500 text-white cursor-pointer border-yellow-300 hover:scale-110 hover:shadow-2xl" : 
+                "bg-gradient-to-br from-green-400 to-green-600 text-white cursor-pointer border-green-300 hover:scale-110 hover:shadow-2xl"
+              }`}
+            >
+              <span className="text-2xl lg:text-3xl mb-1">{absenDisabled ? "🔒" : statusAbsenSekarang === "Terlambat" ? "⚠️" : "✓"}</span>
+              <span className="font-bold text-sm lg:text-base">Absensi</span>
+            </button>
+
+            {!absenDisabled && (
+              <p className={`text-center text-sm mt-4 ${statusAbsenSekarang === "Terlambat" ? "text-yellow-600" : "text-green-600"} animate-pulse-subtle`}>
+                {statusAbsenSekarang === "Terlambat" ? "⚠️ Kamu akan tercatat terlambat" : "✅ Kamu bisa absen sekarang"}
               </p>
-
-              {tasks.length === 0 && !sudahLewatBatas && (
-                <div className="bg-yellow-100 text-yellow-700 p-3 rounded mb-4 text-sm">
-                  ⚠ Tombol Absensi Dinonaktifkan<br />
-                  Kamu belum input tugas apapun. Tambahkan minimal 1 tugas terlebih dahulu.
-                  <button onClick={() => { setActiveTab("tasks"); setShowModal(true); }} className="block mt-2 text-blue-600 underline text-xs">+ Tambah tugas sekarang</button>
-                </div>
-              )}
-
-              {sudahLewatBatas && (
-                <div className="bg-red-100 text-red-700 p-3 rounded mb-4 text-sm">❌ Waktu absensi sudah habis!</div>
-              )}
-
-              {statusAbsenSekarang === "Terlambat" && !sudahAbsenHariIni && (
-                <div className="bg-yellow-100 text-yellow-700 p-3 rounded mb-4 text-sm">
-                  ⚠ Kamu akan tercatat <strong>Terlambat</strong> jika melakukan absen sekarang.<br />Batas hadir sudah lewat!
-                </div>
-              )}
-
-              {sudahAbsenHariIni && (
-                <div className={`p-3 rounded mb-4 text-sm ${
-                  statusHariIni === "Hadir" ? "bg-green-100 text-green-700"
-                  : statusHariIni === "Terlambat" ? "bg-yellow-100 text-yellow-700"
-                  : statusHariIni === "Sakit" ? "bg-blue-100 text-blue-700"
-                  : statusHariIni === "Izin" ? "bg-purple-100 text-purple-700"
-                  : statusHariIni === "Libur" ? "bg-gray-100 text-gray-600"
-                  : "bg-red-100 text-red-700"
-                }`}>
-                  {statusHariIni === "Hadir" && "✓ Kamu sudah absen hari ini — Hadir!"}
-                  {statusHariIni === "Terlambat" && "⚠ Kamu sudah absen hari ini — Terlambat."}
-                  {statusHariIni === "Sakit" && "🤒 Kamu tercatat Sakit hari ini."}
-                  {statusHariIni === "Izin" && "📝 Kamu tercatat Izin hari ini."}
-                  {statusHariIni === "Libur" && "🎉 Hari ini adalah hari libur!"}
-                  {statusHariIni === "Alpa" && <span>❌ Kamu sudah tercatat <strong>Alpa</strong> hari ini.</span>}
-                </div>
-              )}
-
-              <button
-                disabled={absenDisabled}
-                onClick={() => !absenDisabled && setShowAbsenModal(true)}
-                className={`w-24 h-24 lg:w-28 lg:h-28 rounded-full flex flex-col items-center justify-center mx-auto shadow-2xl border-4 transition-all duration-300 ${absenDisabled ? "bg-gray-300 text-gray-400 cursor-not-allowed border-gray-200" : statusAbsenSekarang === "Terlambat" ? "bg-gradient-to-br from-yellow-400 to-yellow-500 text-white cursor-pointer border-yellow-300 hover:scale-105" : "bg-gradient-to-br from-green-400 to-green-600 text-white cursor-pointer border-green-300 hover:scale-105"}`}
-              >
-                <span className="text-lg lg:text-xl">{absenDisabled ? "🔒" : statusAbsenSekarang === "Terlambat" ? "⚠" : "✓"}</span>
-                <span className="font-bold text-xs lg:text-sm">Absensi</span>
-              </button>
-
-              {!absenDisabled && (
-                <p className={`text-center text-xs lg:text-sm mt-3 ${statusAbsenSekarang === "Terlambat" ? "text-yellow-600" : "text-green-600"}`}>
-                  {statusAbsenSekarang === "Terlambat" ? "Kamu akan tercatat terlambat ⚠" : "Kamu bisa absen sekarang ✓"}
-                </p>
-              )}
-            </div>
+            )}
           </div>
 
-          <div className="dashboard-stat-card">
-            <h3 className="font-semibold mb-1 text-sm lg:text-base">Riwayat Absensi</h3>
-            <p className="text-xs text-gray-400 mb-3">
+          {/* History Card */}
+          <div className="dashboard-stat-card bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h3 className="font-semibold text-gray-800 mb-1 flex items-center gap-2">
+              <Clock className="w-5 h-5 text-blue-600" />
+              Riwayat Absensi
+            </h3>
+            <p className="text-xs text-gray-400 mb-4">
               {now.toLocaleDateString("id-ID", { month: "long", year: "numeric" })}
             </p>
             {isLoadingHistory ? (
-              <div className="text-center py-6 text-gray-400">
-                <p className="text-sm">Memuat riwayat...</p>
+              <div className="text-center py-8">
+                <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                <p className="text-gray-400 mt-2 text-sm">Memuat riwayat...</p>
               </div>
             ) : absenceHistory.length === 0 ? (
-              <p className="text-gray-400 text-sm">Belum ada riwayat absensi bulan ini.</p>
+              <div className="text-center py-8 bg-gray-50 rounded-xl animate-fade-in">
+                <p className="text-gray-400 text-sm">Belum ada riwayat absensi bulan ini.</p>
+              </div>
             ) : (
-              absenceHistory.map((item, i) => (
-                <div key={i} className="dashboard-stat-card" style={{ animationDelay: `${0.3 + i * 0.05}s` }}>
-                  <AbsenceItem date={item.date} status={item.status} />
-                </div>
-              ))
+              <div className="space-y-2">
+                {absenceHistory.map((item, i) => (
+                  <div key={i} className="dashboard-stat-card" style={{ animationDelay: `${0.3 + i * 0.05}s` }}>
+                    <AbsenceItem date={item.date} status={item.status} />
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </div>
@@ -550,49 +708,72 @@ export default function AbsencePage() {
   );
 }
 
-function StatCard({ title, value, color = "blue" }: { title: string; value: string; color?: string }) {
-  const colors: Record<string, string> = { red: "text-red-500", green: "text-green-500", purple: "text-purple-500", blue: "text-blue-500" };
-  return (
-    <div className="bg-white rounded-xl p-3 lg:p-4 shadow">
-      <p className="text-gray-500 text-xs lg:text-sm">{title}</p>
-      <h2 className={`text-xl lg:text-2xl font-bold ${colors[color]}`}>{value}</h2>
-    </div>
-  );
-}
-
 function TaskItem({ task, onToggle, onDelete, onEdit }: { task: Task; onToggle: (id: string) => void; onDelete: (id: string) => void; onEdit: (task: Task) => void }) {
   return (
-    <div className={`border rounded-xl p-3 lg:p-4 mb-3 lg:mb-4 flex justify-between items-center gap-2 ${task.done ? "border-green-400" : "border-blue-500"}`}>
+    <div className={`bg-white rounded-xl p-4 mb-3 flex justify-between items-center gap-3 shadow-sm border transition-all duration-300 hover:shadow-md hover:scale-[1.02] ${
+      task.done ? "border-green-200 bg-green-50/30" : "border-gray-100"
+    }`}>
       <div className="flex-1 min-w-0">
-        <p className={`text-sm lg:text-base truncate ${task.done ? "line-through text-gray-400" : ""}`}>{task.title}</p>
+        <p className={`text-sm md:text-base truncate ${task.done ? "line-through text-gray-400" : "text-gray-700 font-medium"}`}>
+          {task.title}
+        </p>
         {!task.done && task.date && (
-          <span className="text-xs text-gray-400 mt-1 block">{task.date}</span>
+          <div className="flex items-center gap-1 mt-1">
+            <Calendar className="w-3 h-3 text-gray-400" />
+            <span className="text-xs text-gray-400">{task.date}</span>
+          </div>
         )}
       </div>
-      <div className="flex items-center gap-1.5 shrink-0">
+      <div className="flex items-center gap-2 shrink-0">
         {!task.done && (
-          <button onClick={() => onEdit(task)} className="text-blue-400 hover:text-blue-600 text-xs bg-blue-50 hover:bg-blue-100 rounded px-2 py-1">✏</button>
+          <button 
+            onClick={() => onEdit(task)} 
+            className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-all duration-200 transform hover:scale-110 active:scale-95"
+            title="Edit tugas"
+          >
+            <Edit2 className="w-4 h-4" />
+          </button>
         )}
-        <button onClick={() => onDelete(task.id)} className="text-red-400 hover:text-red-600 text-xs bg-red-100 hover:bg-red-200 rounded px-2 py-1">−</button>
-        <input type="checkbox" checked={task.done ?? false} onChange={() => onToggle(task.id)} className="w-4 h-4 cursor-pointer shrink-0" />
+        <button 
+          onClick={() => onDelete(task.id)} 
+          className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all duration-200 transform hover:scale-110 active:scale-95 text-lg font-bold"
+          title="Hapus tugas"
+        >
+          X
+        </button>
+        <button 
+          onClick={() => onToggle(task.id)} 
+          className={`p-2 rounded-lg transition-all duration-200 transform hover:scale-110 active:scale-95 ${
+            task.done 
+              ? "text-green-600 hover:text-green-700 hover:bg-green-100" 
+              : "text-gray-400 hover:text-green-600 hover:bg-green-50"
+          }`}
+          title={task.done ? "Tandai belum selesai" : "Tandai selesai"}
+        >
+          <CheckCircle className="w-5 h-5" />
+        </button>
       </div>
     </div>
   );
 }
 
-function AbsenceItem({ date, status }: { date: string; status: "Hadir" | "Terlambat" | "Alpa" | "Sakit" | "Izin" | "Libur" }) {
-  const styles = {
-    Hadir: "bg-green-100 text-green-700",
-    Terlambat: "bg-yellow-100 text-yellow-700",
-    Alpa: "bg-red-100 text-red-700",
-    Sakit: "bg-blue-100 text-blue-700",
-    Izin: "bg-purple-100 text-purple-700",
-    Libur: "bg-pink-100 text-pink-600",
-  };
+function AbsenceItem({ date, status }: { date: string; status: "Hadir" | "Terlambat" | "Alpa" | "Sakit" | "Izin" }) {
+  const styles: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
+  Hadir: { bg: "bg-green-50", text: "text-green-700", icon: <CheckCircle className="w-4 h-4" /> },
+  Terlambat: { bg: "bg-yellow-50", text: "text-yellow-700", icon: <Clock className="w-4 h-4" /> },
+  Alpa: { bg: "bg-red-50", text: "text-red-700", icon: <XCircle className="w-4 h-4" /> },
+  Sakit: { bg: "bg-blue-50", text: "text-blue-700", icon: <Heart className="w-4 h-4" /> },
+  Izin: { bg: "bg-purple-50", text: "text-purple-700", icon: <BookOpen className="w-4 h-4" /> },
+};
+  const style = styles[status];
   return (
-    <div className={`p-3 lg:p-4 rounded-xl mb-3 flex justify-between text-sm ${styles[status]}`}>
-      <span>{date}</span>
-      <span className="font-medium">{status === "Libur" ? "Libur Nasional" : status}</span>
+    <div className={`${style.bg} rounded-xl p-3 flex justify-between items-center border border-${status === "Hadir" ? "green" : status === "Terlambat" ? "yellow" : status === "Alpa" ? "red" : status === "Sakit" ? "blue" : "purple"}-100 transition-all duration-300 hover:shadow-md hover:scale-[1.02]`}>
+      <span className="text-sm font-medium text-gray-700">{date}</span>
+      <div className={`flex items-center gap-1.5 ${style.text} font-medium text-sm`}>
+        {style.icon}
+        <span>{status}</span>
+      </div>
     </div>
   );
 }
+
