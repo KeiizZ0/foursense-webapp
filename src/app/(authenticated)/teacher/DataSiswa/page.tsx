@@ -52,11 +52,18 @@ export default function DataSiswa() {
   console.log('dataSiswa:', dataSiswa.length, 'filteredData:', filteredData.length, 'searchTerm:', searchTerm);
 
   if (loading) {
-    return <div className="p-6 bg-gray-100 min-h-screen">Loading...</div>;
+    return (
+      <div className="p-6 bg-blue-900/10 min-h-screen flex items-center justify-center rounded-2xl">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Memuat data siswa...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="p-6 bg-gray-100 min-h-screen">
+    <div className="p-6 bg-blue-900/10 rounded-2xl min-h-screen">
       {/* Header */}
       <div className="mb-6 flex flex-col items-start">
         <h1 className="text-2xl font-bold">Data Siswa</h1>
@@ -85,17 +92,18 @@ export default function DataSiswa() {
           filteredData.map((siswa, index) => (
             <div
               key={index}
-              className="bg-white rounded-xl shadow p-4 flex justify-between items-center"
+              className="bg-white rounded-xl shadow p-4 flex justify-between items-center hover:shadow-lg transition-shadow duration-300 dashboard-stat-card"
+              style={{ animationDelay: `${0.1 + index * 0.05}s` }}
             >
               {/* Kiri */}
-              <div>
-                <h2 className="font-semibold text-lg">{siswa.nama}</h2>
-                <p className="text-sm text-gray-500">NISN: {siswa.nisn}</p>
+              <div className="flex-1">
+                <h2 className="font-semibold text-lg text-gray-800">{siswa.nama}</h2>
+                <p className="text-sm text-gray-500 mt-1">NISN: {siswa.nisn}</p>
 
-                <div className="flex gap-4 mt-2 text-blue-600 text-sm">
-                  <div className="flex items-center gap-1">
-                    <Mail size={16} />
-                    {siswa.email}
+                <div className="flex flex-wrap gap-4 mt-3 text-blue-600 text-sm">
+                  <div className="flex items-center gap-1 bg-blue-50 px-3 py-1 rounded-full">
+                    <Mail size={14} />
+                    <span className="truncate max-w-[200px] md:max-w-none">{siswa.email}</span>
                   </div>
                 </div>
               </div>
@@ -103,10 +111,10 @@ export default function DataSiswa() {
             </div>
           ))
         ) : (
-          <div className="text-center text-gray-500 mt-8">
+          <div className="text-center text-gray-500 mt-8 py-12 bg-white rounded-xl shadow">
             {dataSiswa.length === 0
-              ? "Tidak ada data siswa."
-              : "Tidak ada siswa yang cocok dengan pencarian."}
+              ? "📚 Belum ada data siswa."
+              : "🔍 Tidak ada siswa yang cocok dengan pencarian."}
           </div>
         )}
       </div>
