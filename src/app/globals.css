@@ -50,7 +50,21 @@
   animation: modalFadeIn 0.25s ease-out forwards;
 }
 
+/* Prevent drawer-content from dimming when sidebar is open on mobile */
+.drawer-toggle:checked ~ .drawer-content {
+  opacity: 1 !important;
+}
 
+/* Override DaisyUI default overlay behavior */
+.drawer-side .drawer-overlay {
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+}
+
+/* Ensure content background stays white */
+.drawer-content {
+  background-color: white;
+} 
 
 /* Delay untuk tiap card */
 .dashboard-stat-card:nth-child(1) { animation-delay: 0.1s; }
