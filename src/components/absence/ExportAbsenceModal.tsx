@@ -2,15 +2,7 @@
 
 import * as React from "react";
 import * as XLSX from "xlsx";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { useClassStore } from "@/store/class.store";
 import { exportAbsence } from "@/restApi/absence.api";
 import { toast } from "sonner";
 
@@ -28,8 +20,6 @@ export function ExportAbsenceModal({
   const [endDate, setEndDate] = React.useState<string>("");
   const [selectedClass, setSelectedClass] = React.useState<string>("");
   const [isLoading, setIsLoading] = React.useState(false);
-
-  const { classes } = useClassStore();
 
   const handleDownload = async () => {
     if (!selectedClass || !startDate || !endDate) {
@@ -68,18 +58,6 @@ export function ExportAbsenceModal({
           {/* Select Kelas */}
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">Pilih Kelas</label>
-            <Select onValueChange={setSelectedClass}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Pilih Kelas" />
-              </SelectTrigger>
-              <SelectContent>
-                {classes.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
 
           {/* Input Tanggal Manual */}

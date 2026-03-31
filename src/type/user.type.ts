@@ -21,6 +21,7 @@ export type UserData = {
   kelas?: string;
   student?: {
     id: string;
+    nis: string;
     class: {
       id: string;
       academicYear: string;
@@ -32,22 +33,22 @@ export type UserData = {
 };
 
 export type studentClasses = {
-  nis:number
-  absences: absences[]
-}
+  nis: number;
+  absences: absences[];
+};
 
 export type absences = {
-  date: Date
-  absence_time: Date
-  status: Status
-  has_todo: boolean
-}
+  date: Date;
+  absence_time: Date;
+  status: Status;
+  has_todo: boolean;
+};
 
 enum Status {
   present,
   onLeave,
   ill,
-  unexcused
+  unexcused,
 }
 
 export type UserSummary = {
@@ -92,4 +93,3 @@ export type StudentListResponse = {
     limit: number;
   };
 };
-

@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { getWeeklyAbsensi } from "@/restApi/dashboardSiswa.api";
 import { getMyTodos } from "@/restApi/todo.api";
 import Link from "next/link";

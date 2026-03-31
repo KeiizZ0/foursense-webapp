@@ -10,6 +10,7 @@ import { logout } from "@/lib/helpers/auth";
 import { clientLogout } from "@/lib/helpers/client-auth";
 import { sidebarList } from "@/constant/sidebarList";
 import { usePathname, useRouter } from "next/navigation";
+import { Role } from "@/type/user.type";
 
 export default function RootLayout({
   children,
@@ -121,7 +122,7 @@ export default function RootLayout({
           onClick={() => setIsMobileMenuOpen(false)}
         ></label>
         
-        <div className="flex min-h-full flex-col bg-gray-800 text-gray w-72 lg:w-auto lg:is-drawer-close:w-14 lg:is-drawer-open:w-64 transition-all duration-300">
+        <div className="flex min-h-full flex-col bg-gray-800 text-gray w-72 lg:w-auto lg:is-drawer-close:w-fit lg:is-drawer-open:w-64 transition-all duration-300">
           
           {/* Header mobile */}
           <div className="flex items-center justify-between w-full p-4 lg:hidden border-b border-gray-700">
@@ -157,7 +158,7 @@ export default function RootLayout({
             </li>
 
             {/* Menu list */}
-            {sidebarList(myData?.name!, myData?.role!).map((item, index: number) => {
+            {sidebarList(myData?.name!, myData?.role! as Role).map((item, index: number) => {
               const isActive = pathname === item.link;
               return (
                 <li key={index}>
@@ -176,7 +177,7 @@ export default function RootLayout({
                       setIsMobileMenuOpen(false);
                     }}
                   >
-                    <span className="flex items-center gap-3">
+                    <span className="flex items-center justify-center gap-3">
                       {item.Icon}
                       <span className="lg:is-drawer-close:hidden">{item.Page}</span>
                     </span>
