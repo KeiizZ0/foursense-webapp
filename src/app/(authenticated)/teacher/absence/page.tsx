@@ -18,7 +18,6 @@ export default function TeacherAbsencePage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  // State untuk Modal Export
   const [showExportModal, setShowExportModal] = useState(false)
   const [exportStartDate, setExportStartDate] = useState(new Date().toISOString().split('T')[0])
   const [exportEndDate, setExportEndDate] = useState(new Date().toISOString().split('T')[0])
@@ -90,7 +89,6 @@ export default function TeacherAbsencePage() {
     fetchAbsences()
   }, [selectedClass, dateFilter])
 
-  // LOGIC EXPORT EXCEL DENGAN NOMOR OTOMATIS
   const handleExportExcel = async () => {
     setExportLoading(true)
     try {
@@ -110,24 +108,18 @@ export default function TeacherAbsencePage() {
 
       if (response.success) {
         const absences: Absence[] = response.data.absences
-        
         const studentMap: { [key: string]: any } = {}
 
         absences.forEach((abs: any) => {
           const nis = abs.student.nis || '-'
           const name = abs.student.user.name
           const date = abs.absenceAt.split('T')[0]
-          
           if (!studentMap[nis]) {
-            studentMap[nis] = { 
-              NIS: nis, 
-              Nama: name 
-            }
+            studentMap[nis] = { NIS: nis, Nama: name }
           }
           studentMap[nis][date] = mapApiStatusToLocal(abs.status).toUpperCase()
         })
 
-        // Menambahkan penomoran otomatis
         const finalData = Object.values(studentMap).map((student, index) => ({
           No: index + 1,
           ...student
@@ -175,14 +167,13 @@ export default function TeacherAbsencePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-6 lg:p-8">
+    <div className="min-h-screen bg-blue-900/10 p-4 md:p-6 lg:p-8 rounded-2xl">
       {/* HEADER */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+      <div className="dashboard-stat-card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Kehadiran Siswa</h1>
           <p className="text-sm md:text-base text-gray-600 mt-1">Pantau dan kelola kehadiran siswa per kelas</p>
         </div>
-        
         <button
           onClick={() => setShowExportModal(true)}
           disabled={!selectedClass}
@@ -196,7 +187,7 @@ export default function TeacherAbsencePage() {
       {/* MODAL EXPORT */}
       {showExportModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-modal-in">
             <div className="flex items-center justify-between p-4 border-b">
               <h3 className="text-lg font-bold text-gray-900">Export ke Excel</h3>
               <button onClick={() => setShowExportModal(false)} className="text-gray-400 hover:text-gray-600">
@@ -207,34 +198,20 @@ export default function TeacherAbsencePage() {
               <div className="mb-4">
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Kelas Terpilih</label>
                 <div className="px-4 py-2 bg-gray-100 rounded-lg text-gray-700 font-medium">
-                   Kelas {selectedTingkat} - {kelasList.find(k => k.id === selectedClass)?.name}
+                  Kelas {selectedTingkat} - {kelasList.find(k => k.id === selectedClass)?.name}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Dari Tanggal</label>
-                  <input 
-                    type="date" 
-                    value={exportStartDate} 
-                    onChange={(e) => setExportStartDate(e.target.value)}
-                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" 
-                  />
+                  <input type="date" value={exportStartDate} onChange={(e) => setExportStartDate(e.target.value)} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Sampai Tanggal</label>
-                  <input 
-                    type="date" 
-                    value={exportEndDate} 
-                    onChange={(e) => setExportEndDate(e.target.value)}
-                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" 
-                  />
+                  <input type="date" value={exportEndDate} onChange={(e) => setExportEndDate(e.target.value)} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" />
                 </div>
               </div>
-              <button
-                onClick={handleExportExcel}
-                disabled={exportLoading}
-                className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors disabled:bg-blue-300"
-              >
+              <button onClick={handleExportExcel} disabled={exportLoading} className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors disabled:bg-blue-300">
                 {exportLoading ? 'Memproses...' : 'Download Excel'}
               </button>
             </div>
@@ -243,7 +220,7 @@ export default function TeacherAbsencePage() {
       )}
 
       {/* PILIH TINGKAT */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 mb-6">
+      <div className="dashboard-stat-card bg-gray-50 rounded-xl border border-gray-200 p-4 md:p-6 mb-6" style={{ animationDelay: "0.1s" }}>
         <div className="flex items-center gap-2 mb-4">
           <Calendar className="w-5 h-5 text-gray-700" />
           <h2 className="text-lg font-semibold text-gray-900">Pilih Tingkat Kelas</h2>
@@ -252,9 +229,7 @@ export default function TeacherAbsencePage() {
           {['10', '11', '12'].map((tingkat) => (
             <button
               key={tingkat}
-              onClick={() => {
-                setSelectedTingkat(tingkat); setSelectedJurusan(''); setSelectedClass(''); setAbsenceData([]);
-              }}
+              onClick={() => { setSelectedTingkat(tingkat); setSelectedJurusan(''); setSelectedClass(''); setAbsenceData([]); }}
               className={`px-4 py-3 rounded-lg font-medium ${selectedTingkat === tingkat ? 'bg-blue-600 text-white shadow-md' : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-blue-300'}`}
             >
               Kelas {tingkat}
@@ -265,7 +240,7 @@ export default function TeacherAbsencePage() {
 
       {/* PILIH JURUSAN */}
       {selectedTingkat && (
-        <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 mb-6">
+        <div className="dashboard-stat-card bg-gray-50  rounded-xl border border-gray-200 p-4 md:p-6 mb-6" style={{ animationDelay: "0.15s" }}>
           <div className="flex items-center gap-2 mb-4">
             <Users className="w-5 h-5 text-gray-700" />
             <h2 className="text-lg font-semibold text-gray-900">Pilih Jurusan</h2>
@@ -286,7 +261,7 @@ export default function TeacherAbsencePage() {
 
       {/* PILIH KELAS */}
       {selectedJurusan && (
-        <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 mb-6">
+        <div className="dashboard-stat-card  bg-gray-50  rounded-xl border border-gray-200 p-4 md:p-6 mb-6" style={{ animationDelay: "0.2s" }}>
           <div className="flex items-center gap-2 mb-4">
             <Users className="w-5 h-5 text-gray-700" />
             <h2 className="text-lg font-semibold text-gray-900">Pilih Kelas</h2>
@@ -308,7 +283,7 @@ export default function TeacherAbsencePage() {
       {/* DATA AREA */}
       {selectedClass && (
         <>
-          <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 mb-6">
+          <div className="dashboard-stat-card  bg-gray-50  rounded-xl border border-gray-200 p-4 md:p-6 mb-6" style={{ animationDelay: "0.25s" }}>
             <div className="flex items-center gap-2 mb-4">
               <Filter className="w-5 h-5 text-gray-700" />
               <h2 className="text-lg font-semibold text-gray-900">Filter Tanggal</h2>
@@ -322,14 +297,24 @@ export default function TeacherAbsencePage() {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-            <StatCard icon={<CheckCircle className="w-6 h-6 text-green-600" />} val={stats.present} label="Hadir" color="green" />
-            <StatCard icon={<Clock className="w-6 h-6 text-yellow-600" />} val={stats.late} label="Terlambat" color="yellow" />
-            <StatCard icon={<XCircle className="w-6 h-6 text-red-600" />} val={stats.alpha} label="Alpha" color="red" />
-            <StatCard icon={<BookOpen className="w-6 h-6 text-blue-600" />} val={stats.izin} label="Izin" color="blue" />
-            <StatCard icon={<AlertCircle className="w-6 h-6 text-purple-600" />} val={stats.sakit} label="Sakit" color="purple" />
+            <div className="dashboard-stat-card" style={{ animationDelay: "0.3s" }}>
+              <StatCard icon={<CheckCircle className="w-6 h-6 text-green-600" />} val={stats.present} label="Hadir" color="green" />
+            </div>
+            <div className="dashboard-stat-card" style={{ animationDelay: "0.35s" }}>
+              <StatCard icon={<Clock className="w-6 h-6 text-yellow-600" />} val={stats.late} label="Terlambat" color="yellow" />
+            </div>
+            <div className="dashboard-stat-card" style={{ animationDelay: "0.4s" }}>
+              <StatCard icon={<XCircle className="w-6 h-6 text-red-600" />} val={stats.alpha} label="Alpha" color="red" />
+            </div>
+            <div className="dashboard-stat-card" style={{ animationDelay: "0.45s" }}>
+              <StatCard icon={<BookOpen className="w-6 h-6 text-blue-600" />} val={stats.izin} label="Izin" color="blue" />
+            </div>
+            <div className="dashboard-stat-card" style={{ animationDelay: "0.5s" }}>
+              <StatCard icon={<AlertCircle className="w-6 h-6 text-purple-600" />} val={stats.sakit} label="Sakit" color="purple" />
+            </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6">
+          <div className="dashboard-stat-card bg-white rounded-xl border border-gray-200 p-4 md:p-6" style={{ animationDelay: "0.55s" }}>
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Data Kehadiran {kelasList.find(k => k.id === selectedClass)?.name}</h2>
             {loading ? <p className="text-center py-6">Loading...</p> : absenceData.length === 0 ? (
               <div className="text-center py-12"><p className="text-gray-600">Belum ada data kehadiran</p></div>
@@ -368,7 +353,7 @@ export default function TeacherAbsencePage() {
       )}
 
       {!selectedClass && (
-        <div className="bg-white rounded-xl border-2 border-dashed border-gray-300 p-12 text-center">
+        <div className="dashboard-stat-card bg-white rounded-xl border-2 border-dashed border-gray-300 p-12 text-center" style={{ animationDelay: "0.15s" }}>
           <ChevronDown className="w-12 h-12 mx-auto text-gray-400 mb-4" />
           <p className="text-gray-700 font-medium">
             {!selectedTingkat ? 'Pilih tingkat kelas terlebih dahulu' : !selectedJurusan ? 'Pilih jurusan terlebih dahulu' : 'Pilih kelas untuk melihat data kehadiran'}
