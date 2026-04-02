@@ -82,6 +82,7 @@ export default function AbsencePage() {
   const [editDeadline, setEditDeadline] = useState("");
   const [isEditLoading, setIsEditLoading] = useState(false);
   const [editError, setEditError] = useState("");
+  const [todayAbsence, setTodayAbsence] = useState("");
 
   const [showAbsenModal, setShowAbsenModal] = useState(false);
   const [isAbsenLoading, setIsAbsenLoading] = useState(false);
@@ -208,69 +209,16 @@ export default function AbsencePage() {
   }
 
   async function fetchAbsenceHistory() {
-    setIsLoadingHistory(true);
     try {
       const studentId = (myData as any)?.student?.id;
       if (!studentId) return;
 
-      const response = await ApiClient.get("/api/absen/get-all", {
-        params: { student: studentId, limit: 100 },
-      });
+      const response = await ApiClient.get("/api/absen/me");
 
-      const all = response.data?.data?.absences || [];
-      const userName = myData?.name;
-
-      const mine = Array.isArray(all)
-        ? all.filter((a: any) => a.student?.user?.name === userName)
-        : [];
-
-      const mapped: AbsenceRecord[] = mine
-        .map((a: any) => ({
-          date: new Date(a.absenceAt).toLocaleDateString("id-ID", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-            timeZone: "Asia/Jakarta",
-          }),
-          status: mapStatusAbsen(a.status),
-          _raw: new Date(a.absenceAt),
-        }))
-        .filter((a: any) => {
-          return a._raw.getMonth() === currentMonth && a._raw.getFullYear() === currentYear;
-        })
-        .map(({ _raw, ...rest }: any) => rest);
-
-      // FIX: Hitung isWeekend dan lewatBatas secara lokal di sini
-      // agar tidak bergantung pada state/closure yang mungkin stale
-      const nowLocal = new Date();
-      const dayOfWeekLocal = nowLocal.getDay();
-      const isWeekendLocal = dayOfWeekLocal === 0 || dayOfWeekLocal === 6;
-      const totalMenitLocal = nowLocal.getHours() * 60 + nowLocal.getMinutes();
-      const lewatBatasLocal = totalMenitLocal >= 10 * 60;
-      
-
-      const todayLocal = nowLocal.toLocaleDateString("id-ID", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      });
-
-      const sudahAdaHariIni = mapped.some((a) => a.date === todayLocal);
-
-      // Hanya insert Alpa jika: belum ada absen hari ini, sudah lewat batas, DAN bukan weekend
-      if (!sudahAdaHariIni && lewatBatasLocal && !isWeekendLocal) {
-        mapped.unshift({ date: todayLocal, status: "Alpa" });
-      }
-
-      const unique = mapped.filter((item, index, self) =>
-        index === self.findIndex((t) => t.date === item.date)
-      );
-      unique.sort((a, b) => parseDate(b.date).getTime() - parseDate(a.date).getTime());
-      setAbsenceHistory(unique);
+      setTodayAbsence(response.data.data.status)
+      return;
     } catch (err) {
       console.error("Gagal fetch history absensi:", err);
-    } finally {
-      setIsLoadingHistory(false);
     }
   }
 
@@ -461,19 +409,13 @@ export default function AbsencePage() {
         
         <div className="dashboard-stat-card bg-white rounded-2xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-all duration-300 hover:scale-105">
           <div className="flex items-center justify-between mb-2">
-            <div className={`p-2 rounded-xl ${
-              statusHariIni === "Hadir" ? "bg-green-100" : 
-              statusHariIni === "Terlambat" ? "bg-yellow-100" : 
-              statusHariIni === "Alpa" ? "bg-red-100" : "bg-blue-100"
-            }`}>
-              {statusHariIni === "Hadir" && <CheckCircle className="w-5 h-5 text-green-500" />}
-              {statusHariIni === "Terlambat" && <Clock className="w-5 h-5 text-yellow-500" />}
-              {statusHariIni === "Alpa" && <XCircle className="w-5 h-5 text-red-500" />}
-              {statusHariIni === "Sakit" && <Heart className="w-5 h-5 text-blue-500" />}
-              {statusHariIni === "Izin" && <BookOpen className="w-5 h-5 text-purple-500" />}
-              {!statusHariIni && <AlertCircle className="w-5 h-5 text-gray-400" />}
+            <div className="p-2 bg-purple-100 rounded-xl">
+              <TrendingUp className="w-5 h-5 text-purple-500" />
             </div>
-            <span className="text-2xl font-bold text-gray-800">{statusHariIni ?? "-"}</span>
+            <div className="p-2 rounded-xl">
+             
+            </div>
+            <span className="text-2xl font-bold text-gray-800"> {todayAbsence === "ABSENT" ? "TIDAK HADIR" : todayAbsence === "LATE" ? "TERLAMBAT" : todayAbsence === "PRESENT" ? "HADIR" : todayAbsence === "SICK" ? "SAKIT" : todayAbsence === "LATE" ? "TERLAMBAT" : "-"}</span>
           </div>
           <p className="text-sm text-gray-600">Status Absensi</p>
         </div>
@@ -798,7 +740,7 @@ export default function AbsencePage() {
           </div>
 
           {/* History Card */}
-          <div className="dashboard-stat-card bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          {/* <div className="dashboard-stat-card bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <h3 className="font-semibold text-gray-800 mb-1 flex items-center gap-2">
               <Clock className="w-5 h-5 text-blue-600" />
               Riwayat Absensi
@@ -824,7 +766,7 @@ export default function AbsencePage() {
                 ))}
               </div>
             )}
-          </div>
+          </div> */}
         </div>
       )}
     </div>

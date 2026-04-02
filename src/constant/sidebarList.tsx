@@ -17,7 +17,7 @@ export const sidebarList = (slug: string, role: Role) => {
       link: `/${roleList}/dashboard`,
     },
     {
-      Page: "Absence",
+      Page: "Absensi",
       Icon: <FileCheckCorner />,
       link: `/${roleList}/absence`,
     },
